@@ -1,0 +1,556 @@
+"use client";
+
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Search, ShoppingCart, List, Edit, Trash2 } from "lucide-react";
+import OrderSummary from "./OrderSummary";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  category: string;
+  unit: string;
+  isPackage: boolean;
+  image?: string;
+}
+
+interface OrderItem {
+  product: Product;
+  quantity: number;
+  subtotal: number;
+  note: string;
+  discount?: number; // Discount amount in percentage
+}
+
+interface HeldOrder {
+  id: string;
+  items: OrderItem[];
+  timestamp: string;
+  total: number;
+}
+
+export default function SalesInterface() {
+  // Sample product categories
+  const categories = [
+    "All",
+    "Food",
+    "Drinks",
+    "Snacks",
+    "Frozen Food",
+    "Packages",
+  ];
+
+  // State for note dialog
+  const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
+  const [noteDialogProduct, setNoteDialogProduct] = useState<Product | null>(
+    null,
+  );
+  const [noteText, setNoteText] = useState("");
+
+  // State for held orders
+  const [heldOrders, setHeldOrders] = useState<HeldOrder[]>([]);
+  const [isHeldOrdersDialogOpen, setIsHeldOrdersDialogOpen] = useState(false);
+
+  // Sample products data
+  const [products, setProducts] = useState<Product[]>([
+    {
+      id: 1,
+      name: "Rice Box Chicken",
+      price: 20000,
+      category: "Food",
+      unit: "box",
+      isPackage: false,
+      image:
+        "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=300&q=80",
+    },
+    {
+      id: 2,
+      name: "Fishball Satay",
+      price: 10000,
+      category: "Food",
+      unit: "stick",
+      isPackage: false,
+      image:
+        "https://images.unsplash.com/photo-1529042410759-befb1204b468?w=300&q=80",
+    },
+    {
+      id: 3,
+      name: "Iced Tea",
+      price: 5000,
+      category: "Drinks",
+      unit: "cup",
+      isPackage: false,
+      image:
+        "https://images.unsplash.com/photo-1556679343-c1c1c9308e4e?w=300&q=80",
+    },
+    {
+      id: 4,
+      name: "Mineral Water",
+      price: 3000,
+      category: "Drinks",
+      unit: "bottle",
+      isPackage: false,
+      image:
+        "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=300&q=80",
+    },
+    {
+      id: 5,
+      name: "French Fries",
+      price: 15000,
+      category: "Snacks",
+      unit: "portion",
+      isPackage: false,
+      image:
+        "https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?w=300&q=80",
+    },
+    {
+      id: 6,
+      name: "Frozen Meatballs",
+      price: 25000,
+      category: "Frozen Food",
+      unit: "pack",
+      isPackage: false,
+      image:
+        "https://images.unsplash.com/photo-1529042355636-0e9d8b0b01b7?w=300&q=80",
+    },
+    {
+      id: 7,
+      name: "Package A",
+      price: 25000,
+      category: "Packages",
+      unit: "package",
+      isPackage: true,
+      image:
+        "https://images.unsplash.com/photo-1607877742574-a7d9a7449af3?w=300&q=80",
+    },
+    {
+      id: 8,
+      name: "Package B",
+      price: 35000,
+      category: "Packages",
+      unit: "package",
+      isPackage: true,
+      image:
+        "https://images.unsplash.com/photo-1607877742574-a7d9a7449af3?w=300&q=80",
+    },
+  ]);
+
+  // State for current order
+  const [currentOrder, setCurrentOrder] = useState<OrderItem[]>([]);
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Filter products based on active category and search query
+  const filteredProducts = products.filter((product) => {
+    const matchesCategory =
+      activeCategory === "All" || product.category === activeCategory;
+    const matchesSearch = product.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  // Calculate order total
+  const orderTotal = currentOrder.reduce(
+    (total, item) => total + item.subtotal,
+    0,
+  );
+
+  // Process current order and move it to held orders
+  const processOrder = () => {
+    if (currentOrder.length === 0) return;
+
+    const newHeldOrder: HeldOrder = {
+      id: `order-${Date.now()}`,
+      items: [...currentOrder],
+      timestamp: new Date().toLocaleTimeString(),
+      total: orderTotal,
+    };
+
+    setHeldOrders([...heldOrders, newHeldOrder]);
+    setCurrentOrder([]);
+  };
+
+  // Recall a held order
+  const recallHeldOrder = (orderId: string) => {
+    const orderToRecall = heldOrders.find((order) => order.id === orderId);
+    if (!orderToRecall) return;
+
+    setCurrentOrder(orderToRecall.items);
+    setHeldOrders(heldOrders.filter((order) => order.id !== orderId));
+    setIsHeldOrdersDialogOpen(false);
+  };
+
+  // Delete a held order
+  const deleteHeldOrder = (orderId: string) => {
+    setHeldOrders(heldOrders.filter((order) => order.id !== orderId));
+  };
+
+  // Handle order checkout
+  const handleCheckout = () => {
+    // This would be implemented with actual backend integration
+    console.log("Processing checkout for order:", currentOrder);
+    console.log("Total amount:", orderTotal);
+  };
+
+  // Calculate subtotal with discount
+  const calculateSubtotal = (
+    price: number,
+    quantity: number,
+    discount: number,
+  ) => {
+    const subtotal = price * quantity;
+    return discount > 0 ? subtotal * (1 - discount / 100) : subtotal;
+  };
+
+  return (
+    <div className="flex flex-col md:flex-row h-full bg-background">
+      {/* Main content area */}
+      <div className="flex-1 overflow-auto p-4">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">Sales Interface</h1>
+          <p className="text-muted-foreground">View and manage orders</p>
+        </div>
+
+        {/* Search and filter */}
+        <div className="mb-6 flex items-center gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search products..."
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* Categories tabs */}
+        <Tabs defaultValue="All" className="mb-6">
+          <TabsList className="mb-4 flex flex-wrap">
+            {categories.map((category) => (
+              <TabsTrigger
+                key={category}
+                value={category}
+                onClick={() => setActiveCategory(category)}
+              >
+                {category}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          {/* Products grid with add functionality */}
+          <TabsContent value={activeCategory} className="mt-0">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {filteredProducts.map((product) => (
+                <Card key={product.id} className="overflow-hidden">
+                  {product.image && (
+                    <div className="relative w-full h-32 overflow-hidden">
+                      <img
+                        src={product.image}
+                        alt={product.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <CardHeader className="p-4 pb-2">
+                    <div className="flex justify-between">
+                      <CardTitle className="text-base">
+                        {product.name}
+                      </CardTitle>
+                      {product.isPackage && (
+                        <Badge variant="secondary">Package</Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {product.unit}
+                    </p>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">
+                        {new Intl.NumberFormat("id-ID", {
+                          style: "currency",
+                          currency: "IDR",
+                        }).format(product.price)}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => {
+                            const existingItem = currentOrder.find(
+                              (item) => item.product.id === product.id,
+                            );
+                            if (existingItem) {
+                              // Update quantity if item already exists
+                              const updatedOrder = currentOrder.map((item) =>
+                                item.product.id === product.id
+                                  ? {
+                                      ...item,
+                                      quantity: item.quantity + 1,
+                                      subtotal: calculateSubtotal(
+                                        item.product.price,
+                                        item.quantity + 1,
+                                        item.discount || 0,
+                                      ),
+                                    }
+                                  : item,
+                              );
+                              setCurrentOrder(updatedOrder);
+                            } else {
+                              // Add new item to order
+                              const newItem: OrderItem = {
+                                product,
+                                quantity: 1,
+                                subtotal: product.price,
+                                note: "",
+                                discount: 0,
+                              };
+                              setCurrentOrder([...currentOrder, newItem]);
+                            }
+                          }}
+                        >
+                          +
+                        </Button>
+                        <span className="text-sm font-medium">
+                          {currentOrder.find(
+                            (item) => item.product.id === product.id,
+                          )?.quantity || 0}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="h-8 w-8"
+                          disabled={
+                            !currentOrder.find(
+                              (item) => item.product.id === product.id,
+                            ) ||
+                            (currentOrder.find(
+                              (item) => item.product.id === product.id,
+                            )?.quantity || 0) <= 0
+                          }
+                          onClick={() => {
+                            const existingItem = currentOrder.find(
+                              (item) => item.product.id === product.id,
+                            );
+                            if (existingItem) {
+                              if (existingItem.quantity > 1) {
+                                // Decrease quantity
+                                const updatedOrder = currentOrder.map((item) =>
+                                  item.product.id === product.id
+                                    ? {
+                                        ...item,
+                                        quantity: item.quantity - 1,
+                                        subtotal: calculateSubtotal(
+                                          item.product.price,
+                                          item.quantity - 1,
+                                          item.discount || 0,
+                                        ),
+                                      }
+                                    : item,
+                                );
+                                setCurrentOrder(updatedOrder);
+                              } else {
+                                // Remove item if quantity becomes 0
+                                const updatedOrder = currentOrder.filter(
+                                  (item) => item.product.id !== product.id,
+                                );
+                                setCurrentOrder(updatedOrder);
+                              }
+                            }
+                          }}
+                        >
+                          -
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Order summary sidebar */}
+      <div className="w-full md:w-[400px] border-t md:border-t-0 md:border-l bg-card">
+        <div className="p-4 border-b flex justify-between items-center">
+          <h2 className="text-lg font-semibold">Current Order</h2>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsHeldOrdersDialogOpen(true)}
+              className="flex items-center gap-1"
+            >
+              <List className="h-4 w-4" /> Orders ({heldOrders.length})
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={processOrder}
+              disabled={currentOrder.length === 0}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Process Order
+            </Button>
+          </div>
+        </div>
+        <OrderSummary
+          items={currentOrder.map((item) => ({
+            id: item.product.id,
+            name: item.product.name,
+            price: item.product.price,
+            quantity: item.quantity,
+            note: item.note,
+            discount: item.discount,
+          }))}
+          onRemoveItem={(id) => {
+            const updatedOrder = currentOrder.filter(
+              (item) => item.product.id !== id,
+            );
+            setCurrentOrder(updatedOrder);
+          }}
+          onUpdateQuantity={(id, newQuantity) => {
+            if (newQuantity <= 0) {
+              // Remove item if quantity becomes 0
+              const updatedOrder = currentOrder.filter(
+                (item) => item.product.id !== id,
+              );
+              setCurrentOrder(updatedOrder);
+            } else {
+              // Update quantity
+              const updatedOrder = currentOrder.map((item) =>
+                item.product.id === id
+                  ? {
+                      ...item,
+                      quantity: newQuantity,
+                      subtotal: calculateSubtotal(
+                        item.product.price,
+                        newQuantity,
+                        item.discount || 0,
+                      ),
+                    }
+                  : item,
+              );
+              setCurrentOrder(updatedOrder);
+            }
+          }}
+          onCheckout={handleCheckout}
+          onCancelOrder={() => setCurrentOrder([])}
+        />
+      </div>
+
+      {/* Held Orders Dialog */}
+      <Dialog
+        open={isHeldOrdersDialogOpen}
+        onOpenChange={setIsHeldOrdersDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Held Orders</DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] pr-4">
+            {heldOrders.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No held orders
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {heldOrders.map((order) => (
+                  <Card key={order.id} className="p-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div>
+                        <h3 className="font-medium">
+                          Order #{order.id.split("-")[1]}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {order.timestamp}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => recallHeldOrder(order.id)}
+                          className="flex items-center gap-1"
+                        >
+                          <Edit className="h-4 w-4" /> Recall
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteHeldOrder(order.id)}
+                          className="flex items-center gap-1 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" /> Delete
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      {order.items.map((item, idx) => (
+                        <div
+                          key={`${order.id}-${idx}`}
+                          className="flex justify-between text-sm"
+                        >
+                          <span>
+                            {item.quantity}x {item.product.name}
+                            {item.note && (
+                              <span className="text-xs italic ml-1">
+                                ({item.note})
+                              </span>
+                            )}
+                          </span>
+                          <span>
+                            {new Intl.NumberFormat("id-ID", {
+                              style: "currency",
+                              currency: "IDR",
+                            }).format(item.subtotal)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-2 pt-2 border-t flex justify-between font-medium">
+                      <span>Total:</span>
+                      <span>
+                        {new Intl.NumberFormat("id-ID", {
+                          style: "currency",
+                          currency: "IDR",
+                        }).format(order.total)}
+                      </span>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsHeldOrdersDialogOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
