@@ -7,8 +7,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "POS WARUNG MAKAN",
-  description: "A modern full-stack starter template powered by Next.js",
+  title: "POS Warung Makan",
+  description: "POS Jualan Warung Makan",
 };
 
 export default function RootLayout({

@@ -1,8 +1,9 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Boolean, Text
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime, Boolean, Text, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import datetime
 from database import db
+import enum
 
 class Product(db.Model):
     __tablename__ = "products"
@@ -17,6 +18,9 @@ class Product(db.Model):
     
     # Relationship with OrderItem
     order_items = relationship("OrderItem", back_populates="product")
+    
+    # Relationship with RecipeComponent
+    recipe_components = relationship("RecipeComponent", back_populates="product", cascade="all, delete-orphan")
 
 class Order(db.Model):
     __tablename__ = "orders"
@@ -55,6 +59,10 @@ class InventoryItem(db.Model):
     min_threshold = Column(Float, nullable=False)
     last_updated = Column(DateTime, default=func.now(), onupdate=func.now())
     category = Column(String(50), nullable=False)
+    cost_per_unit = Column(Float, nullable=True)
+    
+    # Relationship with RecipeComponent
+    recipe_components = relationship("RecipeComponent", back_populates="inventory_item")
 
 class Expense(db.Model):
     __tablename__ = "expenses"
@@ -92,6 +100,39 @@ class PayrollEntry(db.Model):
     # Relationship with Employee
     employee = relationship("Employee", back_populates="payroll_entries")
 
+class TransactionType(enum.Enum):
+    OPENING = "opening"
+    CLOSING = "closing"
+    SALE = "sale"
+    EXPENSE = "expense"
+    ADJUSTMENT = "adjustment"
+
+class CashBalance(db.Model):
+    __tablename__ = "cash_balance"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    transaction_date = Column(DateTime, default=func.now())
+    transaction_type = Column(Enum(TransactionType), nullable=False)
+    amount = Column(Float, nullable=False)
+    reference_id = Column(Integer, nullable=True)  # Can reference order_id or expense_id
+    notes = Column(Text, nullable=True)
+    recorded_by = Column(Integer, ForeignKey("users.id"))
+    
+    # Relationship with User
+    user = relationship("User", back_populates="cash_transactions")
+
+class RecipeComponent(db.Model):
+    __tablename__ = "recipe_components"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(Integer, ForeignKey("products.id"))
+    inventory_item_id = Column(Integer, ForeignKey("inventory_items.id"))
+    quantity = Column(Float, nullable=False)  # Amount of inventory item needed for one product
+    
+    # Relationships
+    product = relationship("Product", back_populates="recipe_components")
+    inventory_item = relationship("InventoryItem", back_populates="recipe_components")
+
 class User(db.Model):
     __tablename__ = "users"
     
@@ -101,3 +142,6 @@ class User(db.Model):
     hashed_password = Column(String(255), nullable=False)
     role = Column(String(20), nullable=False)  # admin, cashier
     is_active = Column(Boolean, default=True)
+    
+    # Relationship with CashBalance
+    cash_transactions = relationship("CashBalance", back_populates="user")

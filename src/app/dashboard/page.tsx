@@ -56,8 +56,17 @@ export default function DashboardPage() {
             size="lg"
             onClick={() => router.push("/inventory")}
           >
-            <Package className="mr-2 h-5 w-5" />
+            <ShoppingCart className="mr-2 h-5 w-5" />
             Inventory
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start"
+            size="lg"
+            onClick={() => router.push("/products")}
+          >
+            <Package className="mr-2 h-5 w-5" />
+            Products
           </Button>
           <Button
             variant="ghost"
@@ -81,42 +90,12 @@ export default function DashboardPage() {
             variant="ghost"
             className="w-full justify-start"
             size="lg"
-            onClick={() => router.push("/expenses")}
-          >
-            <DollarSign className="mr-2 h-5 w-5" />
-            Expenses
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            size="lg"
             onClick={() => router.push("/cash-balance")}
           >
             <Wallet className="mr-2 h-5 w-5" />
             Cash Balance
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            size="lg"
-            onClick={() => router.push("/financials")}
-          >
-            <FileText className="mr-2 h-5 w-5" />
-            Financials
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            size="lg"
-            onClick={() => router.push("/payroll")}
-          >
-            <Users className="mr-2 h-5 w-5" />
-            Payroll
-          </Button>
-          <Button variant="ghost" className="w-full justify-start" size="lg">
-            <Receipt className="mr-2 h-5 w-5" />
-            Receipts
-          </Button>
+
           <Button variant="ghost" className="w-full justify-start" size="lg">
             <Settings className="mr-2 h-5 w-5" />
             Settings
@@ -161,10 +140,6 @@ export default function DashboardPage() {
         {/* Content */}
         <main className="flex-1 overflow-auto p-6">
           <Tabs defaultValue="sales" className="w-full">
-            <TabsList className="mb-6">
-              <TabsTrigger value="sales">Sales Interface</TabsTrigger>
-            </TabsList>
-
             <TabsContent value="sales" className="mt-0">
               <Card className="border-0 shadow-none">
                 <CardHeader className="px-0 pt-0">
