@@ -130,16 +130,26 @@ export default function CashBalancePage() {
     setIsAddDialogOpen(false);
   };
 
-  const formatCurrency = (amount) => {
+  // const formatCurrency = (amount) => {
+  //   return new Intl.NumberFormat("id-ID", {
+  //     style: "currency",
+  //     currency: "IDR",
+  //     minimumFractionDigits: 0,
+  //   }).format(amount);
+  // };
+
+  //  backup function for formatCurrency
+  const formatCurrency = (amount: string | number) => {
+    const value = typeof amount === "string" ? Number(amount) : amount;
     return new Intl.NumberFormat("id-ID", {
       style: "currency",
       currency: "IDR",
       minimumFractionDigits: 0,
-    }).format(amount);
+    }).format(value);
   };
 
   // Categories based on transaction type
-  const getCategories = (type) => {
+  const getCategories = (type: string) => {
     if (type === "income") {
       return ["Sales", "Investment", "Other Income"];
     } else {

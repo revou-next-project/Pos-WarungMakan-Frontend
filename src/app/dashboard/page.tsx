@@ -33,6 +33,10 @@ export default function DashboardPage() {
   };
 
   const handleLogout = () => {
+    // ✅ Clear the token cookie by setting it with an expired date
+    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+    // ✅ Redirect to login
     router.push("/login");
   };
 
@@ -96,7 +100,7 @@ export default function DashboardPage() {
             Cash Balance
           </Button>
 
-          <Button variant="ghost" className="w-full justify-start" size="lg">
+          <Button variant="ghost" className="w-full justify-start" size="lg" onClick={() => router.push("/settings")}>
             <Settings className="mr-2 h-5 w-5" />
             Settings
           </Button>
