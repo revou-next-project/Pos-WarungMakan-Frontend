@@ -1,3 +1,4 @@
+"use client";
 export default function UnauthorizedPage() {
     return (
         <div className="flex flex-col items-center justify-center w-screen h-screen gap-12 py-8">
@@ -34,6 +35,12 @@ export default function UnauthorizedPage() {
         <p className="text-xl">
           You tried to access a page you did not have prior authorization for.
         </p>
+        <button
+          onClick={() => window.location.href = "/dashboard"}
+          className="mt-4 inline-flex items-center justify-center rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700 transition duration-200"
+        >
+          🔙 Back to Dashboard
+        </button>
       </div>
     </div>
     );

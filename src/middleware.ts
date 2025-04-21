@@ -24,14 +24,14 @@ export async function middleware(req: NextRequest) {
       role = payload.role as string; // ⬅️ Extract role from JWT payload
       console.log("✅ Authenticated as:", role);
 
-      const response = NextResponse.next();
-      response.cookies.set("role", role, {
-        path: "/",
-        httpOnly: false, // 🔓 so it’s readable by frontend JavaScript
-        sameSite: "lax",
-        maxAge: 60 * 15, // 15 minutes
-      });
-      return response;
+      // // const response = NextResponse.next();
+      // response.cookies.set("role", role, {
+      //   path: "/",
+      //   httpOnly: false, // 🔓 so it’s readable by frontend JavaScript
+      //   sameSite: "lax",
+      //   maxAge: 60 * 15, // 15 minutes
+      // });
+      // return response;
     } catch (error) {
       console.error("❌ Invalid or expired JWT:", error);
       const response = NextResponse.redirect(new URL("/login", req.url));
@@ -60,11 +60,11 @@ export async function middleware(req: NextRequest) {
       "/settings",
       "/products",
       "/recipes",
+      "/expenses",
     ],
     cashier: [
       "/dashboard",
       "/sales",
-      "/cash-balance",
     ],
   };
 
@@ -75,6 +75,7 @@ export async function middleware(req: NextRequest) {
   if (!isAuthenticated && isProtectedRoute) {
     const response = NextResponse.redirect(new URL("/login", req.url));
     response.cookies.delete("token");
+    response.cookies.delete("role");
     return response;
   }
 
@@ -90,7 +91,19 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+
+  // Set role cookie only if authenticated
+  if (isAuthenticated && role) {
+    response.cookies.set("role", role, {
+      path: "/",
+      httpOnly: false,
+      sameSite: "lax",
+      maxAge: 60 * 15, // 15 minutes
+    });
+  }
+
+  return response;
 }
 export const config = {
   matcher: [
@@ -104,5 +117,6 @@ export const config = {
     "/settings/:path*",
     "/products/:path*",
     "/recipes/:path*",
+    "/expenses/:path*",
   ],
 };
