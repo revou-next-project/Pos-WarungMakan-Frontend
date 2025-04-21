@@ -2,7 +2,11 @@
  * API client for interacting with the backend
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { UserData } from "@/app/models/UserData";
+import { getTokenFromCookies } from "./utils";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URLL || "http://localhost:8000";
+
 
 // Generic fetch function with error handling
 async function fetchAPI<T>(
@@ -10,7 +14,6 @@ async function fetchAPI<T>(
   options: RequestInit = {},
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-
   const headers = {
     "Content-Type": "application/json",
     ...options.headers,
@@ -141,6 +144,42 @@ export const authAPI = {
       body: JSON.stringify({ username, password }),
     });
   },
+};
+
+export const usersAPI = {
+  getAll: () => {
+    const token = getTokenFromCookies();
+    return fetchAPI<UserData[]>(`/users`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+  updateUser: (id: number, user: Partial<UserData>) => {
+    const token = getTokenFromCookies();
+    return fetchAPI<UserData>(`/users/${id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(user),
+    });
+  },
+  createUser: (user: UserData) => {
+    return fetchAPI<UserData>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(user),
+    });
+  },
+  deleteUser: (id: number) => {
+    const token = getTokenFromCookies();
+    return fetchAPI<void>(`/users/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  }
 };
 
 // Type definitions

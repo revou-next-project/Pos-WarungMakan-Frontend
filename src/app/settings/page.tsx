@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,51 +40,49 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface UserData {
-  id: number;
-  name: string;
-  email: string;
-  role: "admin" | "cashier";
-  lastLogin?: string;
-}
+import { UserData } from "../models/UserData";
+import { StoreSettings } from "../models/UserData";
+import { usersAPI } from "@/lib/api";
+import { formatToWIB_ddMMyyyyHHmm } from "@/lib/utils";
 
-interface StoreSettings {
-  name: string;
-  address: string;
-  phone: string;
-  taxRate: number;
-  currency: string;
-  logo?: string;
-}
+
+
 
 export default function SettingsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("users");
 
   // Users state
-  const [users, setUsers] = useState<UserData[]>([
-    {
-      id: 1,
-      name: "Admin User",
-      email: "admin@example.com",
-      role: "admin",
-      lastLogin: "2023-06-15 08:30",
-    },
-    {
-      id: 2,
-      name: "Cashier 1",
-      email: "cashier1@example.com",
-      role: "cashier",
-      lastLogin: "2023-06-14 17:45",
-    },
-    {
-      id: 3,
-      name: "Cashier 2",
-      email: "cashier2@example.com",
-      role: "cashier",
-      lastLogin: "2023-06-13 09:15",
-    },
-  ]);
+  // const [users, setUsers] = useState<UserData[]>([
+  //   {
+  //     id: 1,
+  //     name: "Admin User",
+  //     email: "admin@example.com",
+  //     role: "admin",
+  //     last_login: "2023-06-15 08:30",
+  //   },
+  //   {
+  //     id: 2,
+  //     name: "Cashier 1",
+  //     email: "cashier1@example.com",
+  //     role: "cashier",
+  //     last_login: "2023-06-14 17:45",
+  //   },
+  //   {
+  //     id: 3,
+  //     name: "Cashier 2",
+  //     email: "cashier2@example.com",
+  //     role: "cashier",
+  //     last_login: "2023-06-13 09:15",
+  //   },
+  // ]);
+  const [users, setUsers] = useState<UserData[]>([]);
+
+  useEffect(() => {
+    usersAPI.getAll().then((data) => {
+      setUsers(data);
+    });
+  }, []);
 
   // Store settings state
   const [storeSettings, setStoreSettings] = useState<StoreSettings>({
@@ -102,8 +100,9 @@ export default function SettingsPage() {
   const [isDeleteUserDialogOpen, setIsDeleteUserDialogOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
   const [newUser, setNewUser] = useState<Partial<UserData>>({
-    name: "",
+    username: "",
     email: "",
+    password: "",
     role: "cashier",
   });
 
@@ -113,10 +112,16 @@ export default function SettingsPage() {
     const userToAdd = { ...newUser, id } as UserData;
     setUsers([...users, userToAdd]);
     setNewUser({
-      name: "",
+      username: "",
       email: "",
+      password: "",
       role: "cashier",
     });
+    try {
+      usersAPI.createUser(userToAdd);
+    } catch (error) {
+      console.error("Error creating user:", error);
+    }
     setIsAddUserDialogOpen(false);
   };
 
@@ -126,6 +131,11 @@ export default function SettingsPage() {
       u.id === currentUser.id ? currentUser : u,
     );
     setUsers(updatedUsers);
+    try {
+      usersAPI.updateUser(currentUser.id, currentUser);
+    } catch (error) {
+      console.error("Error updating user:", error);
+    }
     setIsEditUserDialogOpen(false);
     setCurrentUser(null);
   };
@@ -134,6 +144,11 @@ export default function SettingsPage() {
     if (!currentUser) return;
     const filteredUsers = users.filter((u) => u.id !== currentUser.id);
     setUsers(filteredUsers);
+    try {
+      usersAPI.deleteUser(currentUser.id);
+    } catch (error) {
+      console.error("Error deleting user:", error);
+    }
     setIsDeleteUserDialogOpen(false);
     setCurrentUser(null);
   };
@@ -194,7 +209,7 @@ export default function SettingsPage() {
                 <TableBody>
                   {users.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell className="font-medium">{user.username}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
                         <Badge
@@ -205,7 +220,7 @@ export default function SettingsPage() {
                           {user.role === "admin" ? "Admin" : "Cashier"}
                         </Badge>
                       </TableCell>
-                      <TableCell>{user.lastLogin || "Never"}</TableCell>
+                      <TableCell>{user.last_login ? formatToWIB_ddMMyyyyHHmm(user.last_login) : "Never"}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -370,9 +385,9 @@ export default function SettingsPage() {
               <Label htmlFor="name">Full Name</Label>
               <Input
                 id="name"
-                value={newUser.name}
+                value={newUser.username}
                 onChange={(e) =>
-                  setNewUser({ ...newUser, name: e.target.value })
+                  setNewUser({ ...newUser, username: e.target.value })
                 }
                 placeholder="Enter full name"
               />
@@ -387,6 +402,18 @@ export default function SettingsPage() {
                   setNewUser({ ...newUser, email: e.target.value })
                 }
                 placeholder="Enter email address"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="password">password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={newUser.password}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, password: e.target.value })
+                }
+                placeholder="Enter password"
               />
             </div>
             <div className="grid gap-2">
@@ -434,11 +461,11 @@ export default function SettingsPage() {
                 <Label htmlFor="edit-name">Full Name</Label>
                 <Input
                   id="edit-name"
-                  value={currentUser.name}
+                  value={currentUser.username}
                   onChange={(e) =>
                     setCurrentUser({
                       ...currentUser,
-                      name: e.target.value,
+                      username: e.target.value,
                     })
                   }
                 />
@@ -500,7 +527,7 @@ export default function SettingsPage() {
           <p>
             Are you sure you want to delete{" "}
             <span className="font-semibold">
-              {currentUser?.name || "this user"}
+              {currentUser?.username || "this user"}
             </span>
             ? This action cannot be undone.
           </p>

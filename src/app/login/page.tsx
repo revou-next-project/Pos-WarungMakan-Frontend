@@ -36,7 +36,7 @@ export default function LoginPage() {
       // ✅ Store token in cookie instead of localStorage
       document.cookie = `token=${token}; path=/; max-age=900; secure; samesite=strict`;
       // ✅ Redirect after successful login
-      router.push("/dashboard");
+      window.location.href = "/dashboard";
     } catch (err: any) {
       console.error("Login failed:", err);
       setError(err?.message || "Login failed. Please try again.");
