@@ -34,7 +34,7 @@ export default function LoginPage() {
       const token = response.access_token || response.token;
 
       // ✅ Store token in cookie instead of localStorage
-      document.cookie = `token=${token}; path=/; secure; samesite=strict`;
+      document.cookie = `token=${token}; path=/; max-age=900; secure; samesite=strict`;
       // ✅ Redirect after successful login
       router.push("/dashboard");
     } catch (err: any) {

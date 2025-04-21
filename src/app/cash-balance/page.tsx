@@ -93,6 +93,8 @@ export default function CashBalancePage() {
   useEffect(() => {
     // Fetch transactions from API
     // For now, we're using mock data
+    
+
   }, []);
 
   // Filter transactions based on active tab
