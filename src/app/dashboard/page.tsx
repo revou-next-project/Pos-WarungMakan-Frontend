@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,6 +21,7 @@ import {
   Wallet,
 } from "lucide-react";
 import SalesInterface from "@/components/pos/SalesInterface";
+import { useRole } from "@/contexts/roleContext";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -33,8 +34,14 @@ export default function DashboardPage() {
   };
 
   const handleLogout = () => {
+    // ✅ Clear the token cookie by setting it with an expired date
+    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+    // ✅ Redirect to login
     router.push("/login");
   };
+  const role = useRole();
 
   return (
     <div className="flex h-screen bg-background">
@@ -46,22 +53,31 @@ export default function DashboardPage() {
         </div>
 
         <nav className="space-y-2 flex-1">
-          <Button variant="ghost" className="w-full justify-start" size="lg">
+          <Button variant="ghost" className={`${role === "admin" || role === "cashier" ? "w-full justify-start" : "hidden"}`} size="lg">
             <ShoppingCart className="mr-2 h-5 w-5" />
             Sales
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start"
+            className={`${role === "admin" ? "w-full justify-start" : "hidden"}`}
             size="lg"
             onClick={() => router.push("/inventory")}
           >
-            <Package className="mr-2 h-5 w-5" />
+            <ShoppingCart className="mr-2 h-5 w-5" />
             Inventory
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start"
+            className={`${role === "admin" ? "w-full justify-start" : "hidden"}`}
+            size="lg"
+            onClick={() => router.push("/products")}
+          >
+            <Package className="mr-2 h-5 w-5" />
+            Products
+          </Button>
+          <Button
+            variant="ghost"
+            className={`${role === "admin" ? "w-full justify-start" : "hidden"}`}
             size="lg"
             onClick={() => router.push("/recipes")}
           >
@@ -70,7 +86,7 @@ export default function DashboardPage() {
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start"
+            className={`${role === "admin" ? "w-full justify-start" : "hidden"}`}
             size="lg"
             onClick={() => router.push("/reports")}
           >
@@ -79,45 +95,18 @@ export default function DashboardPage() {
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start"
-            size="lg"
-            onClick={() => router.push("/expenses")}
-          >
-            <DollarSign className="mr-2 h-5 w-5" />
-            Expenses
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
+            className={`${role === "admin" ? "w-full justify-start" : "hidden"}`}
             size="lg"
             onClick={() => router.push("/cash-balance")}
           >
             <Wallet className="mr-2 h-5 w-5" />
             Cash Balance
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            size="lg"
-            onClick={() => router.push("/financials")}
-          >
-            <FileText className="mr-2 h-5 w-5" />
-            Financials
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            size="lg"
-            onClick={() => router.push("/payroll")}
-          >
-            <Users className="mr-2 h-5 w-5" />
-            Payroll
-          </Button>
-          <Button variant="ghost" className="w-full justify-start" size="lg">
-            <Receipt className="mr-2 h-5 w-5" />
-            Receipts
-          </Button>
-          <Button variant="ghost" className="w-full justify-start" size="lg">
+
+          <Button variant="ghost" 
+            className={`${role === "admin" ? "w-full justify-start" : "hidden"}`}
+            size="lg" 
+            onClick={() => router.push("/settings")}>
             <Settings className="mr-2 h-5 w-5" />
             Settings
           </Button>
@@ -161,10 +150,6 @@ export default function DashboardPage() {
         {/* Content */}
         <main className="flex-1 overflow-auto p-6">
           <Tabs defaultValue="sales" className="w-full">
-            <TabsList className="mb-6">
-              <TabsTrigger value="sales">Sales Interface</TabsTrigger>
-            </TabsList>
-
             <TabsContent value="sales" className="mt-0">
               <Card className="border-0 shadow-none">
                 <CardHeader className="px-0 pt-0">

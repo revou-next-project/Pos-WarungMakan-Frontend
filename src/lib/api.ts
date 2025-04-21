@@ -26,7 +26,8 @@ async function fetchAPI<T>(
     let errorMessage;
     try {
       const errorData = await response.json();
-      errorMessage = errorData.detail || `API error: ${response.status}`;
+      errorMessage = errorData.detail || errorData.error|| `API error: ${response.status}`;
+      
     } catch (e) {
       errorMessage = `API error: ${response.status}`;
     }
@@ -130,6 +131,18 @@ export const inventoryAPI = {
   },
 };
 
+// Auth API
+export const authAPI = {
+  login: (username: string, password: string) => {
+    return fetchAPI<{
+      access_token: any; token: string 
+}>(`/auth/login`, {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    });
+  },
+};
+
 // Type definitions
 export interface Product {
   id: number;
@@ -186,3 +199,13 @@ export interface InventoryItem {
 }
 
 export type InventoryItemCreate = Omit<InventoryItem, "id" | "last_updated">;
+
+export interface Users {
+  id: number;
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+}
+
+export type UserLogin = Omit<Users, "name" | "password">;

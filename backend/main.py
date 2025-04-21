@@ -5,6 +5,7 @@ import models
 from datetime import datetime
 import uuid
 import os
+from sqlalchemy import desc
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -508,6 +509,288 @@ def login():
         'username': user.username,
         'email': user.email,
         'role': user.role
+    })
+
+# Recipe endpoints
+@app.route('/recipes', methods=['GET'])
+def get_recipes():
+    product_id = request.args.get('product_id')
+    
+    if product_id:
+        recipe_components = db.session.query(models.RecipeComponent).filter(models.RecipeComponent.product_id == product_id).all()
+    else:
+        recipe_components = db.session.query(models.RecipeComponent).all()
+    
+    result = []
+    for component in recipe_components:
+        result.append({
+            'id': component.id,
+            'product_id': component.product_id,
+            'inventory_item_id': component.inventory_item_id,
+            'quantity': component.quantity,
+            'product_name': component.product.name if component.product else None,
+            'inventory_item_name': component.inventory_item.name if component.inventory_item else None,
+            'inventory_item_unit': component.inventory_item.unit if component.inventory_item else None
+        })
+    
+    return jsonify(result)
+
+@app.route('/recipes/<int:recipe_id>', methods=['GET'])
+def get_recipe(recipe_id):
+    recipe = db.session.query(models.RecipeComponent).filter(models.RecipeComponent.id == recipe_id).first()
+    
+    if not recipe:
+        return jsonify({"error": "Recipe component not found"}), 404
+    
+    return jsonify({
+        'id': recipe.id,
+        'product_id': recipe.product_id,
+        'inventory_item_id': recipe.inventory_item_id,
+        'quantity': recipe.quantity,
+        'product_name': recipe.product.name if recipe.product else None,
+        'inventory_item_name': recipe.inventory_item.name if recipe.inventory_item else None,
+        'inventory_item_unit': recipe.inventory_item.unit if recipe.inventory_item else None
+    })
+
+@app.route('/recipes', methods=['POST'])
+def create_recipe():
+    data = request.json
+    
+    recipe = models.RecipeComponent(
+        product_id=data['product_id'],
+        inventory_item_id=data['inventory_item_id'],
+        quantity=data['quantity']
+    )
+    
+    db.session.add(recipe)
+    db.session.commit()
+    
+    return jsonify({
+        'id': recipe.id,
+        'product_id': recipe.product_id,
+        'inventory_item_id': recipe.inventory_item_id,
+        'quantity': recipe.quantity
+    }), 201
+
+@app.route('/recipes/<int:recipe_id>', methods=['PUT'])
+def update_recipe(recipe_id):
+    recipe = db.session.query(models.RecipeComponent).filter(models.RecipeComponent.id == recipe_id).first()
+    
+    if not recipe:
+        return jsonify({"error": "Recipe component not found"}), 404
+    
+    data = request.json
+    
+    if 'product_id' in data:
+        recipe.product_id = data['product_id']
+    if 'inventory_item_id' in data:
+        recipe.inventory_item_id = data['inventory_item_id']
+    if 'quantity' in data:
+        recipe.quantity = data['quantity']
+    
+    db.session.commit()
+    
+    return jsonify({
+        'id': recipe.id,
+        'product_id': recipe.product_id,
+        'inventory_item_id': recipe.inventory_item_id,
+        'quantity': recipe.quantity
+    })
+
+@app.route('/recipes/<int:recipe_id>', methods=['DELETE'])
+def delete_recipe(recipe_id):
+    recipe = db.session.query(models.RecipeComponent).filter(models.RecipeComponent.id == recipe_id).first()
+    
+    if not recipe:
+        return jsonify({"error": "Recipe component not found"}), 404
+    
+    db.session.delete(recipe)
+    db.session.commit()
+    
+    return "", 204
+
+@app.route('/recipes/product/<int:product_id>', methods=['GET'])
+def get_product_recipe(product_id):
+    recipe_components = db.session.query(models.RecipeComponent).filter(models.RecipeComponent.product_id == product_id).all()
+    
+    if not recipe_components:
+        return jsonify([]), 200
+    
+    result = []
+    for component in recipe_components:
+        result.append({
+            'id': component.id,
+            'product_id': component.product_id,
+            'inventory_item_id': component.inventory_item_id,
+            'quantity': component.quantity,
+            'inventory_item_name': component.inventory_item.name if component.inventory_item else None,
+            'inventory_item_unit': component.inventory_item.unit if component.inventory_item else None
+        })
+    
+    return jsonify(result)
+
+# Cash balance endpoints
+@app.route('/cash-balance', methods=['GET'])
+def get_cash_balance():
+    transaction_type = request.args.get('transaction_type')
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    query = db.session.query(models.CashBalance)
+    
+    if transaction_type:
+        query = query.filter(models.CashBalance.transaction_type == transaction_type)
+    
+    if start_date:
+        start_datetime = datetime.fromisoformat(start_date)
+        query = query.filter(models.CashBalance.transaction_date >= start_datetime)
+    
+    if end_date:
+        end_datetime = datetime.fromisoformat(end_date)
+        query = query.filter(models.CashBalance.transaction_date <= end_datetime)
+    
+    cash_entries = query.order_by(desc(models.CashBalance.transaction_date)).all()
+    
+    result = []
+    for entry in cash_entries:
+        result.append({
+            'id': entry.id,
+            'transaction_date': entry.transaction_date.isoformat(),
+            'transaction_type': entry.transaction_type.value,
+            'amount': entry.amount,
+            'reference_id': entry.reference_id,
+            'notes': entry.notes,
+            'recorded_by': entry.recorded_by
+        })
+    
+    return jsonify(result)
+
+@app.route('/cash-balance/<int:entry_id>', methods=['GET'])
+def get_cash_balance_entry(entry_id):
+    entry = db.session.query(models.CashBalance).filter(models.CashBalance.id == entry_id).first()
+    
+    if not entry:
+        return jsonify({"error": "Cash balance entry not found"}), 404
+    
+    return jsonify({
+        'id': entry.id,
+        'transaction_date': entry.transaction_date.isoformat(),
+        'transaction_type': entry.transaction_type.value,
+        'amount': entry.amount,
+        'reference_id': entry.reference_id,
+        'notes': entry.notes,
+        'recorded_by': entry.recorded_by
+    })
+
+@app.route('/cash-balance', methods=['POST'])
+def create_cash_balance_entry():
+    data = request.json
+    
+    transaction_type = getattr(models.TransactionType, data['transaction_type'].upper())
+    
+    entry = models.CashBalance(
+        transaction_date=datetime.now() if not data.get('transaction_date') else datetime.fromisoformat(data['transaction_date']),
+        transaction_type=transaction_type,
+        amount=data['amount'],
+        reference_id=data.get('reference_id'),
+        notes=data.get('notes'),
+        recorded_by=data['recorded_by']
+    )
+    
+    db.session.add(entry)
+    db.session.commit()
+    
+    return jsonify({
+        'id': entry.id,
+        'transaction_date': entry.transaction_date.isoformat(),
+        'transaction_type': entry.transaction_type.value,
+        'amount': entry.amount,
+        'reference_id': entry.reference_id,
+        'notes': entry.notes,
+        'recorded_by': entry.recorded_by
+    }), 201
+
+@app.route('/cash-balance/<int:entry_id>', methods=['PUT'])
+def update_cash_balance_entry(entry_id):
+    entry = db.session.query(models.CashBalance).filter(models.CashBalance.id == entry_id).first()
+    
+    if not entry:
+        return jsonify({"error": "Cash balance entry not found"}), 404
+    
+    data = request.json
+    
+    if 'transaction_type' in data:
+        entry.transaction_type = getattr(models.TransactionType, data['transaction_type'].upper())
+    if 'amount' in data:
+        entry.amount = data['amount']
+    if 'reference_id' in data:
+        entry.reference_id = data['reference_id']
+    if 'notes' in data:
+        entry.notes = data['notes']
+    
+    db.session.commit()
+    
+    return jsonify({
+        'id': entry.id,
+        'transaction_date': entry.transaction_date.isoformat(),
+        'transaction_type': entry.transaction_type.value,
+        'amount': entry.amount,
+        'reference_id': entry.reference_id,
+        'notes': entry.notes,
+        'recorded_by': entry.recorded_by
+    })
+
+@app.route('/cash-balance/<int:entry_id>', methods=['DELETE'])
+def delete_cash_balance_entry(entry_id):
+    entry = db.session.query(models.CashBalance).filter(models.CashBalance.id == entry_id).first()
+    
+    if not entry:
+        return jsonify({"error": "Cash balance entry not found"}), 404
+    
+    db.session.delete(entry)
+    db.session.commit()
+    
+    return "", 204
+
+@app.route('/cash-balance/summary', methods=['GET'])
+def get_cash_balance_summary():
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    query = db.session.query(models.CashBalance)
+    
+    if start_date:
+        start_datetime = datetime.fromisoformat(start_date)
+        query = query.filter(models.CashBalance.transaction_date >= start_datetime)
+    
+    if end_date:
+        end_datetime = datetime.fromisoformat(end_date)
+        query = query.filter(models.CashBalance.transaction_date <= end_datetime)
+    
+    cash_entries = query.all()
+    
+    total_balance = 0
+    summary_by_type = {}
+    
+    for entry in cash_entries:
+        transaction_type = entry.transaction_type.value
+        amount = entry.amount
+        
+        # Update total balance
+        if transaction_type in ['opening', 'sale', 'adjustment']:
+            total_balance += amount
+        elif transaction_type in ['closing', 'expense']:
+            total_balance -= amount
+        
+        # Update summary by type
+        if transaction_type not in summary_by_type:
+            summary_by_type[transaction_type] = 0
+        
+        summary_by_type[transaction_type] += amount
+    
+    return jsonify({
+        'total_balance': total_balance,
+        'summary_by_type': summary_by_type
     })
 
 # Run the application

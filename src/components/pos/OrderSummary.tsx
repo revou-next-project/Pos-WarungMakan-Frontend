@@ -18,10 +18,19 @@ import {
   CreditCard,
   QrCode,
   Banknote,
+  MessageSquare,
+  ChevronDown,
 } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface OrderItem {
   id: number;
@@ -38,6 +47,13 @@ interface OrderSummaryProps {
   onCancelOrder?: () => void;
   onUpdateQuantity?: (id: number, quantity: number) => void;
   onRemoveItem?: (id: number) => void;
+  customerType?: "dine-in" | "grab" | "gojek" | "shopee";
+  discountInfo?: {
+    type: "percentage" | "nominal";
+    value: string;
+  };
+  onUpdateDiscountType?: (type: "percentage" | "nominal") => void;
+  onUpdateDiscountValue?: (value: string) => void;
 }
 
 export default function OrderSummary({
@@ -50,6 +66,10 @@ export default function OrderSummary({
   onCancelOrder = () => {},
   onUpdateQuantity = () => {},
   onRemoveItem = () => {},
+  customerType = "dine-in",
+  discountInfo = { type: "percentage", value: "" },
+  onUpdateDiscountType = () => {},
+  onUpdateDiscountValue = () => {},
 }: OrderSummaryProps) {
   const [paymentStep, setPaymentStep] = useState<
     "order" | "payment" | "confirmation" | "receipt"
@@ -58,13 +78,23 @@ export default function OrderSummary({
     "cash" | "qris" | "transfer"
   >("cash");
   const [cashAmount, setCashAmount] = useState<string>("");
-  const [orderDiscount, setOrderDiscount] = useState<number>(0);
 
   const subtotal = items.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
-  const discountAmount = Math.round(subtotal * (orderDiscount / 100));
+
+  // Calculate discount based on type (percentage or nominal)
+  let discountAmount = 0;
+  if (discountInfo && discountInfo.value) {
+    if (discountInfo.type === "percentage") {
+      const percentage = parseFloat(discountInfo.value) || 0;
+      discountAmount = Math.round(subtotal * (percentage / 100));
+    } else {
+      discountAmount = parseFloat(discountInfo.value) || 0;
+    }
+  }
+
   const subtotalAfterDiscount = subtotal - discountAmount;
   const tax = Math.round(subtotalAfterDiscount * 0.1); // 10% tax
   const total = subtotalAfterDiscount + tax;
@@ -110,7 +140,7 @@ export default function OrderSummary({
   };
 
   return (
-    <Card className="h-full bg-white flex flex-col">
+    <Card className="h-full bg-white flex flex-col max-w-full">
       <CardHeader className="pb-3">
         <CardTitle className="text-xl font-bold">Order Summary</CardTitle>
       </CardHeader>
@@ -132,9 +162,12 @@ export default function OrderSummary({
                     <div className="flex-1">
                       <h4 className="font-medium">{item.name}</h4>
                       {item.note && (
-                        <p className="text-xs italic text-muted-foreground">
-                          Note: {item.note}
-                        </p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <MessageSquare className="h-3 w-3 text-muted-foreground" />
+                          <p className="text-xs italic text-muted-foreground">
+                            {item.note}
+                          </p>
+                        </div>
                       )}
                       <div className="flex items-center gap-2">
                         <p className="text-sm text-muted-foreground">
@@ -189,12 +222,22 @@ export default function OrderSummary({
                 <span>Subtotal</span>
                 <span>{formatCurrency(subtotal)}</span>
               </div>
-              {orderDiscount > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>Discount ({orderDiscount}%)</span>
-                  <span>-{formatCurrency(discountAmount)}</span>
+              {customerType && customerType !== "dine-in" && (
+                <div className="flex justify-between">
+                  <span>Customer Type</span>
+                  <span className="capitalize">{customerType}</span>
                 </div>
               )}
+              {discountInfo && discountInfo.value ? (
+                <div className="flex justify-between text-green-600">
+                  <span>
+                    {discountInfo.type === "percentage"
+                      ? `Discount (${discountInfo.value}%)`
+                      : `Discount (Fixed)`}
+                  </span>
+                  <span>-{formatCurrency(discountAmount)}</span>
+                </div>
+              ) : null}
               <div className="flex justify-between">
                 <span>Tax (10%)</span>
                 <span>{formatCurrency(tax)}</span>
@@ -223,17 +266,65 @@ export default function OrderSummary({
       {paymentStep === "payment" && (
         <>
           <CardContent className="flex-grow">
+            <h3 className="text-lg font-semibold mb-4">Customer Type</h3>
+            <div className="mb-6">
+              <Select
+                value={customerType}
+                onValueChange={(value) =>
+                  console.log("Customer type changed to", value)
+                }
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select customer type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dine-in">Dine In</SelectItem>
+                  <SelectItem value="grab">Grab</SelectItem>
+                  <SelectItem value="gojek">Gojek</SelectItem>
+                  <SelectItem value="shopee">Shopee</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <h3 className="text-lg font-semibold mb-4">Order Discount</h3>
-            <div className="mb-6 space-y-2">
-              <Label htmlFor="order-discount">Discount (%)</Label>
+            <div className="mb-4 space-y-2">
+              <div className="flex flex-col sm:flex-row gap-2 mb-2">
+                <RadioGroup
+                  value={discountInfo?.type || "percentage"}
+                  onValueChange={(value) => {
+                    const discountType = value as "percentage" | "nominal";
+                    onUpdateDiscountType(discountType);
+                  }}
+                  className="flex flex-col sm:flex-row gap-2"
+                  id="discount-type"
+                >
+                  <div className="flex items-center space-x-2 border rounded-md p-3">
+                    <RadioGroupItem value="percentage" id="percentage" />
+                    <Label htmlFor="percentage" className="cursor-pointer">
+                      Percentage (%)
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 border rounded-md p-3">
+                    <RadioGroupItem value="nominal" id="nominal" />
+                    <Label htmlFor="nominal" className="cursor-pointer">
+                      Nominal (Rp)
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
               <Input
-                id="order-discount"
                 type="number"
+                placeholder={
+                  discountInfo?.type === "percentage"
+                    ? "Enter discount %"
+                    : "Enter discount amount"
+                }
+                value={discountInfo?.value || ""}
+                onChange={(e) => {
+                  onUpdateDiscountValue(e.target.value);
+                }}
                 min="0"
-                max="100"
-                value={orderDiscount}
-                onChange={(e) => setOrderDiscount(Number(e.target.value))}
-                placeholder="Enter discount percentage"
+                max={discountInfo?.type === "percentage" ? "100" : undefined}
               />
             </div>
 
@@ -324,6 +415,12 @@ export default function OrderSummary({
             )}
 
             <div className="mt-4">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-semibold">Discount Amount</h3>
+                <div className="text-lg font-medium text-green-600">
+                  -{formatCurrency(discountAmount)}
+                </div>
+              </div>
               <h3 className="text-lg font-semibold mb-2">Order Total</h3>
               <div className="text-2xl font-bold">{formatCurrency(total)}</div>
             </div>
@@ -406,9 +503,13 @@ export default function OrderSummary({
                   <span>Subtotal</span>
                   <span>{formatCurrency(subtotal)}</span>
                 </div>
-                {orderDiscount > 0 && (
+                {discountInfo && discountInfo.value && (
                   <div className="flex justify-between">
-                    <span>Discount ({orderDiscount}%)</span>
+                    <span>
+                      {discountInfo.type === "percentage"
+                        ? `Discount (${discountInfo.value}%)`
+                        : `Discount (Fixed)`}
+                    </span>
                     <span>-{formatCurrency(discountAmount)}</span>
                   </div>
                 )}
@@ -450,7 +551,6 @@ export default function OrderSummary({
                 onClick={() => {
                   setPaymentStep("order");
                   setCashAmount("");
-                  setOrderDiscount(0);
                   onCheckout();
                 }}
               >

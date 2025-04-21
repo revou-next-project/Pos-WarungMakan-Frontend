@@ -15,8 +15,10 @@ import {
 import { Label } from "@/components/ui/label";
 import { ChefHat } from "lucide-react";
 
+import { authAPI } from "@/lib/api";
+
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -26,23 +28,22 @@ export default function LoginPage() {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-
+    
     try {
-      // For demo purposes, we're using a simple validation
-      // In a real app, this would connect to Supabase or another auth provider
-      if (email === "admin@example.com" && password === "password") {
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        router.push("/dashboard");
-      } else {
-        setError("Invalid email or password");
-      }
-    } catch (err) {
-      setError("An error occurred during login");
-      console.error(err);
+      const response = await authAPI.login(username, password);
+      const token = response.access_token || response.token;
+
+      // ✅ Store token in cookie instead of localStorage
+      document.cookie = `token=${token}; path=/; max-age=900; secure; samesite=strict`;
+      // ✅ Redirect after successful login
+      router.push("/dashboard");
+    } catch (err: any) {
+      console.error("Login failed:", err);
+      setError(err?.message || "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
+
   };
 
   return (
@@ -75,13 +76,13 @@ export default function LoginPage() {
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="username">Username</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder="admin@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="username"
+                  type="text"
+                  placeholder="admin"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
                   required
                 />
               </div>
@@ -105,9 +106,9 @@ export default function LoginPage() {
           </form>
         </Card>
 
-        <div className="text-center mt-4 text-sm text-muted-foreground">
+        {/* <div className="text-center mt-4 text-sm text-muted-foreground">
           <p>Demo credentials: admin@example.com / password</p>
-        </div>
+        </div> */}
       </div>
     </div>
   );

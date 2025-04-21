@@ -34,43 +34,99 @@ export default function ReportsPage() {
   const [filterType, setFilterType] = useState<"daily" | "monthly" | "yearly">(
     "daily",
   );
+  const [selectedInvoice, setSelectedInvoice] = useState<number | null>(null);
 
   // Mock data for demonstration
   const salesData = [
     {
       id: 1,
+      invoiceNumber: "INV-001",
       date: "2023-05-01",
       total: 250000,
       items: 15,
       paymentMethod: "Cash",
+      orderItems: [
+        {
+          name: "Rice Box Chicken",
+          quantity: 2,
+          price: 20000,
+          note: "Extra spicy",
+        },
+        { name: "Iced Tea", quantity: 3, price: 5000, note: "Less sugar" },
+        { name: "French Fries", quantity: 1, price: 15000, note: "" },
+      ],
+      customerName: "Walk-in Customer",
+      discount: 0,
+      tax: 22500,
     },
     {
       id: 2,
+      invoiceNumber: "INV-002",
       date: "2023-05-01",
       total: 175000,
       items: 8,
       paymentMethod: "QRIS",
+      orderItems: [
+        { name: "Fishball Satay", quantity: 2, price: 10000, note: "" },
+        { name: "Mineral Water", quantity: 2, price: 3000, note: "" },
+        {
+          name: "Rice Box Chicken",
+          quantity: 1,
+          price: 20000,
+          note: "No vegetables",
+        },
+      ],
+      customerName: "Walk-in Customer",
+      discount: 0,
+      tax: 15900,
     },
     {
       id: 3,
+      invoiceNumber: "INV-003",
       date: "2023-05-01",
       total: 320000,
       items: 12,
       paymentMethod: "Transfer",
+      orderItems: [
+        { name: "Package A", quantity: 1, price: 25000, note: "" },
+        { name: "Package B", quantity: 2, price: 35000, note: "" },
+        { name: "Iced Tea", quantity: 4, price: 5000, note: "" },
+      ],
+      customerName: "Office Order",
+      discount: 10,
+      tax: 29000,
     },
     {
       id: 4,
+      invoiceNumber: "INV-004",
       date: "2023-05-02",
       total: 420000,
       items: 18,
       paymentMethod: "Cash",
+      orderItems: [
+        { name: "Rice Box Chicken", quantity: 5, price: 20000, note: "" },
+        { name: "French Fries", quantity: 3, price: 15000, note: "Extra salt" },
+        { name: "Iced Tea", quantity: 5, price: 5000, note: "" },
+      ],
+      customerName: "Walk-in Customer",
+      discount: 0,
+      tax: 38000,
     },
     {
       id: 5,
+      invoiceNumber: "INV-005",
       date: "2023-05-02",
       total: 150000,
       items: 6,
       paymentMethod: "QRIS",
+      orderItems: [
+        { name: "Fishball Satay", quantity: 3, price: 10000, note: "" },
+        { name: "Mineral Water", quantity: 3, price: 3000, note: "" },
+        { name: "French Fries", quantity: 1, price: 15000, note: "" },
+      ],
+      customerName: "Walk-in Customer",
+      discount: 5,
+      tax: 13500,
     },
   ];
 
@@ -290,10 +346,13 @@ export default function ReportsPage() {
                   <thead>
                     <tr className="bg-muted/50">
                       <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        ID
+                        Invoice #
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Date
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Customer
                       </th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Total
@@ -304,17 +363,37 @@ export default function ReportsPage() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         Payment Method
                       </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="bg-card divide-y divide-border">
                     {filteredData.length > 0 ? (
                       filteredData.map((transaction) => (
-                        <tr key={transaction.id}>
+                        <tr
+                          key={transaction.id}
+                          className={
+                            selectedInvoice === transaction.id
+                              ? "bg-primary/10"
+                              : "hover:bg-muted/50 cursor-pointer"
+                          }
+                          onClick={() =>
+                            setSelectedInvoice(
+                              selectedInvoice === transaction.id
+                                ? null
+                                : transaction.id,
+                            )
+                          }
+                        >
                           <td className="px-4 py-3 whitespace-nowrap text-sm">
-                            {transaction.id}
+                            {transaction.invoiceNumber}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm">
                             {transaction.date}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm">
+                            {transaction.customerName}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm">
                             Rp {transaction.total.toLocaleString()}
@@ -325,12 +404,21 @@ export default function ReportsPage() {
                           <td className="px-4 py-3 whitespace-nowrap text-sm">
                             {transaction.paymentMethod}
                           </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
                         <td
-                          colSpan={5}
+                          colSpan={7}
                           className="px-4 py-8 text-center text-sm text-muted-foreground"
                         >
                           No transactions found for this period
@@ -342,6 +430,142 @@ export default function ReportsPage() {
               </div>
             </CardContent>
           </Card>
+
+          {selectedInvoice && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Invoice Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  const invoice = filteredData.find(
+                    (item) => item.id === selectedInvoice,
+                  );
+                  if (!invoice) return null;
+
+                  return (
+                    <div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div>
+                          <h4 className="text-sm font-medium text-muted-foreground">
+                            Invoice Number
+                          </h4>
+                          <p>{invoice.invoiceNumber}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-muted-foreground">
+                            Date
+                          </h4>
+                          <p>{invoice.date}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-muted-foreground">
+                            Customer
+                          </h4>
+                          <p>{invoice.customerName}</p>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-muted-foreground">
+                            Payment Method
+                          </h4>
+                          <p>{invoice.paymentMethod}</p>
+                        </div>
+                      </div>
+
+                      <h4 className="font-medium mb-2">Order Items</h4>
+                      <div className="rounded-md border mb-4">
+                        <table className="min-w-full divide-y divide-border">
+                          <thead>
+                            <tr className="bg-muted/50">
+                              <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
+                                Item
+                              </th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
+                                Quantity
+                              </th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
+                                Price
+                              </th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
+                                Subtotal
+                              </th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
+                                Note
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-border">
+                            {invoice.orderItems.map((item, index) => (
+                              <tr key={index}>
+                                <td className="px-4 py-2 text-sm">
+                                  {item.name}
+                                </td>
+                                <td className="px-4 py-2 text-sm">
+                                  {item.quantity}
+                                </td>
+                                <td className="px-4 py-2 text-sm">
+                                  Rp {item.price.toLocaleString()}
+                                </td>
+                                <td className="px-4 py-2 text-sm">
+                                  Rp{" "}
+                                  {(
+                                    item.quantity * item.price
+                                  ).toLocaleString()}
+                                </td>
+                                <td className="px-4 py-2 text-sm italic text-muted-foreground">
+                                  {item.note || "-"}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="space-y-1 text-sm ml-auto w-full max-w-[300px]">
+                        <div className="flex justify-between">
+                          <span>Subtotal</span>
+                          <span>
+                            Rp {(invoice.total - invoice.tax).toLocaleString()}
+                          </span>
+                        </div>
+                        {invoice.discount > 0 && (
+                          <div className="flex justify-between text-green-600">
+                            <span>Discount ({invoice.discount}%)</span>
+                            <span>
+                              -Rp{" "}
+                              {(
+                                (invoice.total - invoice.tax) *
+                                (invoice.discount / 100)
+                              ).toLocaleString()}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span>Tax (10%)</span>
+                          <span>Rp {invoice.tax.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between font-bold pt-2 border-t mt-2">
+                          <span>Total</span>
+                          <span>Rp {invoice.total.toLocaleString()}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end mt-6">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          Print Invoice
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          )}
         </main>
       </div>
     </div>

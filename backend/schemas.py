@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Union, Literal
 from datetime import datetime
+from enum import Enum
 
 # Product schemas
 class ProductBase(BaseModel):
@@ -71,6 +72,7 @@ class InventoryItemBase(BaseModel):
     unit: str
     min_threshold: float
     category: str
+    cost_per_unit: Optional[float] = None
 
 class InventoryItemCreate(InventoryItemBase):
     pass
@@ -81,6 +83,7 @@ class InventoryItemUpdate(BaseModel):
     unit: Optional[str] = None
     min_threshold: Optional[float] = None
     category: Optional[str] = None
+    cost_per_unit: Optional[float] = None
 
 class InventoryItem(InventoryItemBase):
     id: int
@@ -170,6 +173,57 @@ class UserCreate(UserBase):
 class User(UserBase):
     id: int
     is_active: bool
+    
+    class Config:
+        orm_mode = True
+
+# Recipe component schemas
+class RecipeComponentBase(BaseModel):
+    product_id: int
+    inventory_item_id: int
+    quantity: float
+
+class RecipeComponentCreate(RecipeComponentBase):
+    pass
+
+class RecipeComponentUpdate(BaseModel):
+    product_id: Optional[int] = None
+    inventory_item_id: Optional[int] = None
+    quantity: Optional[float] = None
+
+class RecipeComponent(RecipeComponentBase):
+    id: int
+    
+    class Config:
+        orm_mode = True
+
+# Cash balance schemas
+class TransactionType(str, Enum):
+    OPENING = "opening"
+    CLOSING = "closing"
+    SALE = "sale"
+    EXPENSE = "expense"
+    ADJUSTMENT = "adjustment"
+
+class CashBalanceBase(BaseModel):
+    transaction_type: TransactionType
+    amount: float
+    reference_id: Optional[int] = None
+    notes: Optional[str] = None
+    recorded_by: int
+
+class CashBalanceCreate(CashBalanceBase):
+    transaction_date: Optional[datetime] = None
+
+class CashBalanceUpdate(BaseModel):
+    transaction_type: Optional[TransactionType] = None
+    amount: Optional[float] = None
+    reference_id: Optional[int] = None
+    notes: Optional[str] = None
+
+class CashBalance(CashBalanceBase):
+    id: int
+    transaction_date: datetime
     
     class Config:
         orm_mode = True

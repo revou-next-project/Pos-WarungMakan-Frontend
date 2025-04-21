@@ -6,7 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, ShoppingCart, List, Edit, Trash2 } from "lucide-react";
+import {
+  Search,
+  ShoppingCart,
+  List,
+  Edit,
+  Trash2,
+  MessageSquare,
+} from "lucide-react";
 import OrderSummary from "./OrderSummary";
 import {
   Dialog,
@@ -18,6 +25,13 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Product {
   id: number;
@@ -42,6 +56,11 @@ interface HeldOrder {
   items: OrderItem[];
   timestamp: string;
   total: number;
+  customerType: "dine-in" | "grab" | "gojek" | "shopee";
+  discountInfo?: {
+    type: "percentage" | "nominal";
+    value: string;
+  };
 }
 
 export default function SalesInterface() {
@@ -61,6 +80,28 @@ export default function SalesInterface() {
     null,
   );
   const [noteText, setNoteText] = useState("");
+  const [currentItemId, setCurrentItemId] = useState<number | null>(null);
+
+  // State for customer type
+  const [customerType, setCustomerType] = useState<
+    "dine-in" | "grab" | "gojek" | "shopee"
+  >("dine-in");
+
+  // State for discount type and value
+  const [discountType, setDiscountType] = useState<"percentage" | "nominal">(
+    "percentage",
+  );
+  const [discountValue, setDiscountValue] = useState<string>("");
+
+  // Function to update discount type
+  const handleUpdateDiscountType = (type: "percentage" | "nominal") => {
+    setDiscountType(type);
+  };
+
+  // Function to update discount value
+  const handleUpdateDiscountValue = (value: string) => {
+    setDiscountValue(value);
+  };
 
   // State for held orders
   const [heldOrders, setHeldOrders] = useState<HeldOrder[]>([]);
@@ -180,10 +221,18 @@ export default function SalesInterface() {
       items: [...currentOrder],
       timestamp: new Date().toLocaleTimeString(),
       total: orderTotal,
+      customerType: customerType,
+      discountInfo: discountValue
+        ? {
+            type: discountType,
+            value: discountValue,
+          }
+        : undefined,
     };
 
     setHeldOrders([...heldOrders, newHeldOrder]);
     setCurrentOrder([]);
+    setDiscountValue("");
   };
 
   // Recall a held order
@@ -206,6 +255,9 @@ export default function SalesInterface() {
     // This would be implemented with actual backend integration
     console.log("Processing checkout for order:", currentOrder);
     console.log("Total amount:", orderTotal);
+    // Direct checkout without kitchen queue
+    alert("Order processed successfully!");
+    setCurrentOrder([]);
   };
 
   // Calculate subtotal with discount
@@ -218,12 +270,16 @@ export default function SalesInterface() {
     return discount > 0 ? subtotal * (1 - discount / 100) : subtotal;
   };
 
+  // Handle removing an item from the order
+  const handleRemoveItem = (id: number) => {
+    setCurrentOrder(currentOrder.filter((item) => item.product.id !== id));
+  };
+
   return (
     <div className="flex flex-col md:flex-row h-full bg-background">
       {/* Main content area */}
       <div className="flex-1 overflow-auto p-4">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold">Sales Interface</h1>
           <p className="text-muted-foreground">View and manage orders</p>
         </div>
 
@@ -379,6 +435,38 @@ export default function SalesInterface() {
                         >
                           -
                         </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground"
+                                disabled={
+                                  !currentOrder.find(
+                                    (item) => item.product.id === product.id,
+                                  )
+                                }
+                                onClick={() => {
+                                  const item = currentOrder.find(
+                                    (item) => item.product.id === product.id,
+                                  );
+                                  if (item) {
+                                    setNoteDialogProduct(product);
+                                    setNoteText(item.note || "");
+                                    setCurrentItemId(product.id);
+                                    setIsNoteDialogOpen(true);
+                                  }
+                                }}
+                              >
+                                <MessageSquare className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Add note</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </div>
                     </div>
                   </CardContent>
@@ -395,14 +483,6 @@ export default function SalesInterface() {
           <h2 className="text-lg font-semibold">Current Order</h2>
           <div className="flex gap-2">
             <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsHeldOrdersDialogOpen(true)}
-              className="flex items-center gap-1"
-            >
-              <List className="h-4 w-4" /> Orders ({heldOrders.length})
-            </Button>
-            <Button
               variant="primary"
               size="sm"
               onClick={processOrder}
@@ -411,7 +491,18 @@ export default function SalesInterface() {
             >
               Process Order
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsHeldOrdersDialogOpen(true)}
+              className="flex items-center gap-1"
+            >
+              <List className="h-4 w-4" /> Orders ({heldOrders.length})
+            </Button>
           </div>
+        </div>
+        <div className="p-4 border-b">
+          {/* Customer type and discount selection moved to payment section */}
         </div>
         <OrderSummary
           items={currentOrder.map((item) => ({
@@ -455,8 +546,74 @@ export default function SalesInterface() {
           }}
           onCheckout={handleCheckout}
           onCancelOrder={() => setCurrentOrder([])}
+          customerType={customerType}
+          discountInfo={
+            discountValue
+              ? { type: discountType, value: discountValue }
+              : undefined
+          }
+          onUpdateDiscountType={handleUpdateDiscountType}
+          onUpdateDiscountValue={handleUpdateDiscountValue}
         />
       </div>
+
+      {/* Note Dialog */}
+      <Dialog open={isNoteDialogOpen} onOpenChange={setIsNoteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>
+              {noteDialogProduct
+                ? `Add Note for ${noteDialogProduct.name}`
+                : "Add Note"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="note">Note</Label>
+              <Textarea
+                id="note"
+                placeholder="Special instructions..."
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsNoteDialogOpen(false);
+                setNoteText("");
+                setNoteDialogProduct(null);
+                setCurrentItemId(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (currentItemId) {
+                  const updatedOrder = currentOrder.map((item) =>
+                    item.product.id === currentItemId
+                      ? {
+                          ...item,
+                          note: noteText,
+                        }
+                      : item,
+                  );
+                  setCurrentOrder(updatedOrder);
+                }
+                setIsNoteDialogOpen(false);
+                setNoteText("");
+                setNoteDialogProduct(null);
+                setCurrentItemId(null);
+              }}
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Held Orders Dialog */}
       <Dialog
@@ -481,9 +638,14 @@ export default function SalesInterface() {
                         <h3 className="font-medium">
                           Order #{order.id.split("-")[1]}
                         </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {order.timestamp}
-                        </p>
+                        <div className="flex gap-2 items-center">
+                          <p className="text-sm text-muted-foreground">
+                            {order.timestamp}
+                          </p>
+                          <Badge variant="outline" className="capitalize">
+                            {order.customerType}
+                          </Badge>
+                        </div>
                       </div>
                       <div className="flex gap-2">
                         <Button
@@ -527,6 +689,18 @@ export default function SalesInterface() {
                         </div>
                       ))}
                     </div>
+                    {order.discountInfo && order.discountInfo.value && (
+                      <div className="mt-2 pt-2 border-t">
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>
+                            {order.discountInfo.type === "percentage"
+                              ? `Discount (${order.discountInfo.value}%)`
+                              : `Discount (Fixed)`}
+                          </span>
+                          <span>Applied</span>
+                        </div>
+                      </div>
+                    )}
                     <div className="mt-2 pt-2 border-t flex justify-between font-medium">
                       <span>Total:</span>
                       <span>

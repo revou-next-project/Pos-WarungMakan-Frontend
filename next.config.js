@@ -3,18 +3,20 @@
 const nextConfig = {
     images: {
         domains: ['images.unsplash.com'],
-    }
+    },
+    reactStrictMode: true,
 };
 
+// Conditionally add SWC plugin if tempo devtools is enabled
 if (process.env.NEXT_PUBLIC_TEMPO) {
-    nextConfig["experimental"] = {
-        // NextJS 13.4.8 up to 14.1.3:
-        // swcPlugins: [[require.resolve("tempo-devtools/swc/0.86"), {}]],
-        // NextJS 14.1.3 to 14.2.11:
-        swcPlugins: [[require.resolve("tempo-devtools/swc/0.90"), {}]]
-
-        // NextJS 15+ (Not yet supported, coming soon)
-    }
-}
+    nextConfig.experimental = {
+      ...nextConfig.experimental, // preserve other experimental options
+      swcPlugins: [[require.resolve("tempo-devtools/swc/0.90"), {}]],
+    };
+  
+    // For Next 13.4.8–14.1.3:
+    // swcPlugins: [[require.resolve("tempo-devtools/swc/0.86"), {}]],
+    // For Next 15+ (not yet supported)
+  }
 
 module.exports = nextConfig;
