@@ -21,6 +21,7 @@ import {
   Wallet,
 } from "lucide-react";
 import SalesInterface from "@/components/pos/SalesInterface";
+import { useRole } from "@/contexts/roleContext";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -33,8 +34,13 @@ export default function DashboardPage() {
   };
 
   const handleLogout = () => {
+    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    document.cookie = "role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
     router.push("/login");
   };
+
+  const role = useRole();
 
   return (
     <div className="flex h-screen bg-background">
@@ -46,13 +52,13 @@ export default function DashboardPage() {
         </div>
 
         <nav className="space-y-2 flex-1">
-          <Button variant="ghost" className="w-full justify-start" size="lg">
+          <Button variant="ghost" className={`${role === "admin" || role === "cashier" ? "w-full justify-start" : "hidden"}`} size="lg">
             <ShoppingCart className="mr-2 h-5 w-5" />
             Sales
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start"
+            className={`${role === "admin" ? "w-full justify-start" : "hidden"}`}
             size="lg"
             onClick={() => router.push("/inventory")}
           >
@@ -61,7 +67,7 @@ export default function DashboardPage() {
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start"
+            className={`${role === "admin" ? "w-full justify-start" : "hidden"}`}
             size="lg"
             onClick={() => router.push("/products")}
           >
@@ -70,7 +76,7 @@ export default function DashboardPage() {
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start"
+            className={`${role === "admin" ? "w-full justify-start" : "hidden"}`}
             size="lg"
             onClick={() => router.push("/recipes")}
           >
@@ -79,7 +85,7 @@ export default function DashboardPage() {
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start"
+            className={`${role === "admin" ? "w-full justify-start" : "hidden"}`}
             size="lg"
             onClick={() => router.push("/reports")}
           >
@@ -88,7 +94,7 @@ export default function DashboardPage() {
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start"
+            className={`${role === "admin" ? "w-full justify-start" : "hidden"}`}
             size="lg"
             onClick={() => router.push("/cash-balance")}
           >

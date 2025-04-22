@@ -2,6 +2,9 @@
  * API client for interacting with the backend
  */
 
+import { UserData } from "@/models/UserData";
+import { getTokenFromCookies } from "./utils";
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api-pwk.ahmadcloud.my.id";
 
 // Generic fetch function with error handling
@@ -36,6 +39,43 @@ async function fetchAPI<T>(
 
   return response.json();
 }
+
+export const usersAPI = {
+  getAll: () => {
+    const token = getTokenFromCookies();
+    return fetchAPI<UserData[]>(`/users`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+  updateUser: (id: number, user: Partial<UserData>) => {
+    const token = getTokenFromCookies();
+    return fetchAPI<UserData>(`/users/${id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(user),
+    });
+  },
+  createUser: (user: UserData) => {
+    return fetchAPI<UserData>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(user),
+    });
+  },
+  deleteUser: (id: number) => {
+    const token = getTokenFromCookies();
+    return fetchAPI<void>(`/users/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  }
+};
+
 
 // Auth API (changed to use username instead of email)
 export const authAPI = {
