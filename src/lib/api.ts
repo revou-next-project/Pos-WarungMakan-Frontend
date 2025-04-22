@@ -2,7 +2,7 @@
  * API client for interacting with the backend
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api-pwk.ahmadcloud.my.id";
 
 // Generic fetch function with error handling
 async function fetchAPI<T>(
@@ -22,57 +22,106 @@ async function fetchAPI<T>(
   });
 
   if (!response.ok) {
-    // Try to get error message from response
     let errorMessage;
     try {
       const errorData = await response.json();
-      errorMessage = errorData.detail || `API error: ${response.status}`;
+      errorMessage = Array.isArray(errorData.detail)
+        ? errorData.detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
+        : errorData.detail || JSON.stringify(errorData);
     } catch (e) {
       errorMessage = `API error: ${response.status}`;
     }
-
     throw new Error(errorMessage);
-  }
-
-  // For 204 No Content responses
-  if (response.status === 204) {
-    return {} as T;
   }
 
   return response.json();
 }
 
-// Products API
+// Auth API (changed to use username instead of email)
+export const authAPI = {
+  login: async (username: string, password: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Invalid username or password");
+    }
+
+    const data = await response.json();
+
+    // Ensure the access_token is returned in the response
+    if (!data.access_token) {
+      throw new Error("No access token returned from server");
+    }
+
+    return data; // Return the full data, which contains access_token
+  },
+};
+
+// Helper function to get the token from localStorage
+const getAuthToken = () => localStorage.getItem("token");
+
 export const productsAPI = {
   getAll: (category?: string) => {
+    const token = getAuthToken();
     const query = category ? `?category=${category}` : "";
-    return fetchAPI<Product[]>(`/products${query}`);
+
+    return fetchAPI<Product[]>(`/products${query}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
   },
 
   getById: (id: number) => {
-    return fetchAPI<Product>(`/products/${id}`);
+    const token = getAuthToken();
+    return fetchAPI<Product>(`/products/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
   },
 
   create: (product: ProductCreate) => {
+    const token = getAuthToken();
     return fetchAPI<Product>("/products", {
       method: "POST",
       body: JSON.stringify(product),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json", // Make sure to set the content type for POST requests
+      },
     });
   },
 
   update: (id: number, product: Partial<ProductCreate>) => {
+    const token = getAuthToken();
     return fetchAPI<Product>(`/products/${id}`, {
       method: "PUT",
       body: JSON.stringify(product),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json", // Make sure to set the content type for PUT requests
+      },
     });
   },
 
   delete: (id: number) => {
+    const token = getAuthToken();
     return fetchAPI<void>(`/products/${id}`, {
       method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
   },
 };
+
 
 // Orders API
 export const ordersAPI = {
