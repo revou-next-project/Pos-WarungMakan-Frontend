@@ -126,25 +126,46 @@ export const productsAPI = {
 // Orders API
 export const ordersAPI = {
   getAll: (status?: string) => {
+    const token = getAuthToken();
     const query = status ? `?status=${status}` : "";
-    return fetchAPI<Order[]>(`/orders${query}`);
+
+    return fetchAPI<{ data: Order[] }>(`/orders${query}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
   },
 
   getById: (id: string) => {
-    return fetchAPI<Order>(`/orders/${id}`);
+    const token = getAuthToken();
+    return fetchAPI<OrderDetail>(`/orders/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
   },
 
   create: (order: OrderCreate) => {
+    const token = getAuthToken();
     return fetchAPI<Order>("/orders", {
       method: "POST",
       body: JSON.stringify(order),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
     });
   },
 
   updateStatus: (id: string, status: string) => {
+    const token = getAuthToken();
     return fetchAPI<Order>(`/orders/${id}/status`, {
       method: "PUT",
       body: JSON.stringify({ status }),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
     });
   },
 };
