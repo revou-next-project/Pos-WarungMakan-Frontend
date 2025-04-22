@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,9 +21,28 @@ import {
   Wallet,
 } from "lucide-react";
 import SalesInterface from "@/components/pos/SalesInterface";
+import moment from 'moment';
+import { ordersAPI } from '@/lib/api';
+
+interface Order {
+  id: number;
+  order_number: string;
+  timestamp: string;
+  order_type: string;
+  total_amount: number;
+  payment_status: string;
+  paid_at: string;
+  payment_method: string;
+  created_at: string;
+  updated_at: string;
+}
 
 export default function DashboardPage() {
+  const [todaysOrders, setTodaysOrders] = useState<Order[]>([]);
+  const [totalOrders, setTotalOrders] = useState<number>(0);
+
   const router = useRouter();
+  
 
   // Mock user data - in a real app this would come from authentication
   const user = {
@@ -35,6 +54,15 @@ export default function DashboardPage() {
   const handleLogout = () => {
     router.push("/login");
   };
+
+  const formattedDate = moment().format('YYYY-MM-DD');
+
+  useEffect(() => {
+    ordersAPI.getAll('status').then((response) => {
+      const totalOrders = response.length;
+      setTotalOrders(totalOrders);
+    });
+  }, []);
 
   return (
     <div className="flex h-screen bg-background">
@@ -128,10 +156,10 @@ export default function DashboardPage() {
             <div className="flex items-center gap-4">
               <Button variant="outline" size="sm">
                 <ClipboardList className="mr-2 h-4 w-4" />
-                Today's Orders: 24
+                Today's Orders: {todaysOrders.length}
               </Button>
               <Button variant="outline" size="sm">
-                Date: {new Date().toLocaleDateString()}
+                Date: {moment(formattedDate).format('YYYY-MM-DD')}
               </Button>
             </div>
           </div>
