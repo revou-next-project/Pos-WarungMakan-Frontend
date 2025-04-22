@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,34 +21,24 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
+  // const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
-  
+    
     try {
-      // Attempt login with username and password
-      const data = await authAPI.login(username, password);  // Using username instead of email
-  
-      // Check if access_token exists in the response
-      if (!data.access_token) {
-        throw new Error("Access token is missing in the response");
-      }
-  
-      // Save the access_token to localStorage
-      localStorage.setItem("token", data.access_token);  // Save the token here
-  
-      // Redirect to dashboard after successful login
-      router.push("/dashboard");
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message || "An error occurred during login");
-      } else {
-        setError("An unknown error occurred");
-      }
-      console.error(err);
+      const response = await authAPI.login(username, password);
+      const token = response.access_token || response.token;
+
+      // ✅ Store token in cookie instead of localStorage
+      document.cookie = `token=${token}; path=/; max-age=900; secure; samesite=strict`;
+      // ✅ Redirect after successful login
+      window.location.href = "/dashboard";
+    } catch (err: any) {
+      console.error("Login failed:", err);
+      setError(err?.message || "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }

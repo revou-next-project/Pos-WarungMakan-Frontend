@@ -102,7 +102,10 @@ export default function DashboardPage() {
             Cash Balance
           </Button>
 
-          <Button variant="ghost" className="w-full justify-start" size="lg">
+          <Button variant="ghost" 
+            className={`${role === "admin" ? "w-full justify-start" : "hidden"}`}
+            size="lg" 
+            onClick={() => router.push("/settings")}>
             <Settings className="mr-2 h-5 w-5" />
             Settings
           </Button>
