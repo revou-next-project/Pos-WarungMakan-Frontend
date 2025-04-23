@@ -128,7 +128,6 @@ export const ordersAPI = {
   getAll: (status?: string) => {
     const token = getAuthToken();
     const query = status ? `?status=${status}` : "";
-
     return fetchAPI<{ data: Order[] }>(`/orders${query}`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -230,10 +229,13 @@ export interface Order {
   id: number;
   order_number: string;
   timestamp: string;
-  status: "waiting" | "cooking" | "completed" | "canceled";
-  order_type: "Dine In" | "GoFood" | "Grab" | "Shopee" | "Other";
+  order_type: string;
   total_amount: number;
-  items: OrderItem[];
+  payment_status: string;
+  paid_at: string;
+  payment_method: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface OrderCreate {
