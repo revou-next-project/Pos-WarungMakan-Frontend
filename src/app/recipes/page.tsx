@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -37,65 +37,55 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ArrowLeft, ChefHat, Plus, Trash2, Edit } from "lucide-react";
-
-// Mock data for recipes
-const mockRecipes = [
-  {
-    id: 1,
-    name: "Rice Box Chicken",
-    description: "Chicken rice box with vegetables",
-    category: "Food",
-    ingredients: [
-      { id: 1, name: "Rice", quantity: 150, unit: "g" },
-      { id: 2, name: "Chicken", quantity: 100, unit: "g" },
-      { id: 3, name: "Mixed Vegetables", quantity: 50, unit: "g" },
-      { id: 4, name: "Cooking Oil", quantity: 15, unit: "ml" },
-    ],
-  },
-  {
-    id: 2,
-    name: "Iced Tea",
-    description: "Refreshing iced tea",
-    category: "Drinks",
-    ingredients: [
-      { id: 5, name: "Tea Bag", quantity: 1, unit: "pcs" },
-      { id: 6, name: "Sugar", quantity: 15, unit: "g" },
-      { id: 7, name: "Ice Cubes", quantity: 100, unit: "g" },
-    ],
-  },
-];
+import { recipeAPI } from "@/lib/api";
+import { RecipeData, ingredients } from "@/models/RecipeData";
+// import { set } from "date-fns";
+// import { add } from "date-fns";
 
 // Mock data for inventory items
 const mockInventoryItems = [
-  { id: 1, name: "Rice", current_stock: 10000, unit: "g" },
-  { id: 2, name: "Chicken", current_stock: 5000, unit: "g" },
-  { id: 3, name: "Mixed Vegetables", current_stock: 3000, unit: "g" },
-  { id: 4, name: "Cooking Oil", current_stock: 2000, unit: "ml" },
-  { id: 5, name: "Tea Bag", current_stock: 100, unit: "pcs" },
-  { id: 6, name: "Sugar", current_stock: 5000, unit: "g" },
-  { id: 7, name: "Ice Cubes", current_stock: 2000, unit: "g" },
+  { id: 1, name: "Ayam Fillet", current_stock: 5.35, unit: "kg" },
+  { id: 2, name: "Beras", current_stock: 24.8, unit: "kg" },
+  { id: 3, name: "Minyak Goreng", current_stock: 7.95, unit: "liter" },
+  { id: 4, name: "Fish Ball", current_stock: 1.5, unit: "pack" },
+  { id: 5, name: "Gula", current_stock: 3.99, unit: "kg" },
+  { id: 6, name: "Garam Himalaya", current_stock: 5.0, unit: "kg" },
+  { id: 7, name: "gak nok bahan e", current_stock: 5.0, unit: "kg" },
 ];
 
 export default function RecipesPage() {
   const router = useRouter();
-  const [recipes, setRecipes] = useState(mockRecipes);
+  // const [recipes, setRecipes] = useState(mockRecipes);
+  const [recipes, setRecipes] = useState<RecipeData[]>([]);
   const [inventoryItems, setInventoryItems] = useState(mockInventoryItems);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [toDeleteId, setToDeleteId] = useState<number>(0);
   const [isViewIngredientsDialogOpen, setIsViewIngredientsDialogOpen] =
     useState(false);
-  const [currentRecipe, setCurrentRecipe] = useState({
+  const [currentRecipe, setCurrentRecipe] = useState<RecipeData>({
     id: 0,
+    recipe_id: 0,
     name: "",
     description: "",
     category: "",
     ingredients: [],
   });
-  const [newIngredient, setNewIngredient] = useState({
+  const [newIngredient, setNewIngredient] = useState<ingredients>({
     id: 0,
     name: "",
     quantity: 0,
     unit: "",
+  });
+
+  const [newRecipe, setNewRecipe] = useState<RecipeData>({
+    id: 0,
+    recipe_id: 0,
+    name: "",
+    description: "",
+    category: "",
+    ingredients: [],
   });
 
   // Categories for recipes
@@ -105,36 +95,62 @@ export default function RecipesPage() {
   useEffect(() => {
     // Fetch recipes and inventory items from API
     // For now, we're using mock data
-  }, []);
+    recipeAPI.getAll().then((data) => {
+      setRecipes(data);
+    })
+
+  }, [isAddDialogOpen, isEditDialogOpen, isDeleteDialogOpen]);
 
   const handleAddRecipe = () => {
-    // In a real implementation, this would call the API
-    const newRecipe = {
-      ...currentRecipe,
-      id: recipes.length + 1,
-    };
-    setRecipes([...recipes, newRecipe]);
+    
+    recipeAPI.createRecipe(newRecipe);
+    console.log("Added recipe:", newRecipe);
     resetForm();
     setIsAddDialogOpen(false);
   };
 
   const handleEditRecipe = () => {
-    // In a real implementation, this would call the API
-    const updatedRecipes = recipes.map((recipe) =>
-      recipe.id === currentRecipe.id ? currentRecipe : recipe,
-    );
-    setRecipes(updatedRecipes);
+    
+    console.log("Edited recipe:", currentRecipe);
+    recipeAPI.updateRecipe(currentRecipe.id, currentRecipe);
     resetForm();
     setIsEditDialogOpen(false);
   };
 
-  const handleDeleteRecipe = (id: number) => {
-    // In a real implementation, this would call the API
-    const updatedRecipes = recipes.filter((recipe) => recipe.id !== id);
-    setRecipes(updatedRecipes);
+  const handleDeleteRecipe = (product_id: number) => {
+    
+    recipeAPI.deleteRecipe(product_id);
+    setIsDeleteDialogOpen(false);
   };
 
   const handleAddIngredient = () => {
+    // Find the selected inventory item to get its unit
+    const selectedItem = inventoryItems.find(
+      (item) => item.name === newIngredient.name,
+    );
+
+    if (selectedItem) {
+      const ingredientToAdd = {
+        ...newIngredient,
+        id: Date.now(), // Generate a temporary ID
+        unit: selectedItem.unit,
+      };
+
+      setNewRecipe({
+        ...newRecipe,
+        ingredients: [...newRecipe.ingredients, ingredientToAdd],
+      });
+
+      // Reset the new ingredient form
+      setNewIngredient({
+        id: 0,
+        name: "",
+        quantity: 0,
+        unit: "",
+      });
+    }
+  };
+  const handleUpdateIngredient = () => {
     // Find the selected inventory item to get its unit
     const selectedItem = inventoryItems.find(
       (item) => item.name === newIngredient.name,
@@ -163,17 +179,18 @@ export default function RecipesPage() {
   };
 
   const handleRemoveIngredient = (ingredientId) => {
-    setCurrentRecipe({
-      ...currentRecipe,
-      ingredients: currentRecipe.ingredients.filter(
+    setNewRecipe({
+      ...newRecipe,
+      ingredients: newRecipe.ingredients.filter(
         (ingredient) => ingredient.id !== ingredientId,
       ),
     });
   };
 
   const resetForm = () => {
-    setCurrentRecipe({
+    setNewRecipe({
       id: 0,
+      recipe_id: 0,
       name: "",
       description: "",
       category: "",
@@ -187,15 +204,22 @@ export default function RecipesPage() {
     });
   };
 
-  const openEditDialog = (recipe) => {
+  const openEditDialog = (recipe: RecipeData) => {
     setCurrentRecipe(recipe);
     setIsEditDialogOpen(true);
   };
 
-  const openViewIngredientsDialog = (recipe) => {
+  
+
+  const openViewIngredientsDialog = (recipe: RecipeData) => {
     setCurrentRecipe(recipe);
     setIsViewIngredientsDialogOpen(true);
   };
+
+  const openDeleteDialog = (value: boolean, product_id: number) => {
+    setToDeleteId(product_id);
+    setIsDeleteDialogOpen(value);
+  }
 
   return (
     <div className="flex h-screen bg-background">
@@ -277,7 +301,7 @@ export default function RecipesPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDeleteRecipe(recipe.id)}
+                          onClick={() => openDeleteDialog(true, recipe.id)}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -308,9 +332,9 @@ export default function RecipesPage() {
               <Input
                 id="name"
                 className="col-span-3"
-                value={currentRecipe.name}
+                value={newRecipe.name}
                 onChange={(e) =>
-                  setCurrentRecipe({ ...currentRecipe, name: e.target.value })
+                  setNewRecipe({ ...newRecipe, name: e.target.value })
                 }
               />
             </div>
@@ -319,9 +343,9 @@ export default function RecipesPage() {
                 Category
               </label>
               <Select
-                value={currentRecipe.category}
+                value={newRecipe.category}
                 onValueChange={(value) =>
-                  setCurrentRecipe({ ...currentRecipe, category: value })
+                  setNewRecipe({ ...newRecipe, category: value })
                 }
               >
                 <SelectTrigger className="col-span-3">
@@ -343,10 +367,10 @@ export default function RecipesPage() {
               <Input
                 id="description"
                 className="col-span-3"
-                value={currentRecipe.description}
+                value={newRecipe.description}
                 onChange={(e) =>
-                  setCurrentRecipe({
-                    ...currentRecipe,
+                  setNewRecipe({
+                    ...newRecipe,
                     description: e.target.value,
                   })
                 }
@@ -356,7 +380,7 @@ export default function RecipesPage() {
             <div className="border-t pt-4 mt-2">
               <h4 className="font-medium mb-2">Ingredients</h4>
               <div className="space-y-4">
-                {currentRecipe.ingredients.length > 0 ? (
+                {newRecipe.ingredients.length > 0 ? (
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -367,7 +391,7 @@ export default function RecipesPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {currentRecipe.ingredients.map((ingredient) => (
+                      {newRecipe.ingredients.map((ingredient) => (
                         <TableRow key={ingredient.id}>
                           <TableCell>{ingredient.name}</TableCell>
                           <TableCell>{ingredient.quantity}</TableCell>
@@ -459,9 +483,9 @@ export default function RecipesPage() {
             <Button
               onClick={handleAddRecipe}
               disabled={
-                !currentRecipe.name ||
-                !currentRecipe.category ||
-                currentRecipe.ingredients.length === 0
+                !newRecipe.name ||
+                !newRecipe.category ||
+                newRecipe.ingredients.length === 0
               }
             >
               Save Recipe
@@ -614,7 +638,7 @@ export default function RecipesPage() {
                   </div>
                   <div className="col-span-2">
                     <Button
-                      onClick={handleAddIngredient}
+                      onClick={handleUpdateIngredient}
                       disabled={!newIngredient.name || !newIngredient.quantity}
                       className="w-full"
                     >
@@ -645,6 +669,29 @@ export default function RecipesPage() {
             >
               Update Recipe
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Delete Recipe Dialog */}
+      <Dialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Recipe</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this recipe?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Cancel
+            </Button>            
+              <Button onClick={() => handleDeleteRecipe(toDeleteId)}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -691,3 +738,5 @@ export default function RecipesPage() {
     </div>
   );
 }
+
+
