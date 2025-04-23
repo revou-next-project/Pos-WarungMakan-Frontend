@@ -6,20 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  BarChart3,
-  ChefHat,
-  ClipboardList,
-  DollarSign,
-  FileText,
-  LogOut,
-  Package,
-  Receipt,
-  Settings,
-  ShoppingCart,
-  Users,
-  Wallet,
-} from "lucide-react";
+import { BarChart3, ChefHat, ClipboardList, DollarSign, FileText, LogOut, Package, Receipt, Settings, ShoppingCart, Users, Wallet } from "lucide-react";
 import SalesInterface from "@/components/pos/SalesInterface";
 
 export default function DashboardPage() {
@@ -50,53 +37,28 @@ export default function DashboardPage() {
             <ShoppingCart className="mr-2 h-5 w-5" />
             Sales
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            size="lg"
-            onClick={() => router.push("/inventory")}
-          >
+          <Button variant="ghost" className="w-full justify-start" size="lg" onClick={() => router.push("/inventory")}>
             <ShoppingCart className="mr-2 h-5 w-5" />
             Inventory
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            size="lg"
-            onClick={() => router.push("/products")}
-          >
+          <Button variant="ghost" className="w-full justify-start" size="lg" onClick={() => router.push("/products")}>
             <Package className="mr-2 h-5 w-5" />
             Products
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            size="lg"
-            onClick={() => router.push("/recipes")}
-          >
+          <Button variant="ghost" className="w-full justify-start" size="lg" onClick={() => router.push("/recipes")}>
             <ChefHat className="mr-2 h-5 w-5" />
             Recipes
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            size="lg"
-            onClick={() => router.push("/reports")}
-          >
+          <Button variant="ghost" className="w-full justify-start" size="lg" onClick={() => router.push("/reports")}>
             <BarChart3 className="mr-2 h-5 w-5" />
             Reports
           </Button>
-          <Button
-            variant="ghost"
-            className="w-full justify-start"
-            size="lg"
-            onClick={() => router.push("/cash-balance")}
-          >
+          <Button variant="ghost" className="w-full justify-start" size="lg" onClick={() => router.push("/cash-balance")}>
             <Wallet className="mr-2 h-5 w-5" />
             Cash Balance
           </Button>
 
-          <Button variant="ghost" className="w-full justify-start" size="lg">
+          <Button variant="ghost" className="w-full justify-start" size="lg" onClick={() => router.push("/settings")}>
             <Settings className="mr-2 h-5 w-5" />
             Settings
           </Button>
