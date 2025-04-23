@@ -3,9 +3,11 @@
  */
 
 import { UserData } from "@/models/UserData";
+import { RecipeData } from "@/models/RecipeData";
 import { getTokenFromCookies } from "./utils";
+import { create } from "domain";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api-pwk.ahmadcloud.my.id";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URLL || "https://api-pwk.ahmadcloud.my.id";
 
 // Generic fetch function with error handling
 async function fetchAPI<T>(
@@ -38,6 +40,46 @@ async function fetchAPI<T>(
   }
 
   return response.json();
+}
+
+export const recipeAPI = {
+  getAll: () => {
+    const token = getTokenFromCookies();
+    return fetchAPI<RecipeData[]>("/recipes", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+  createRecipe: (recipe: RecipeData) => {
+    const token = getTokenFromCookies();
+    return fetchAPI<RecipeData>("/recipes", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(recipe),
+    });
+  },
+  updateRecipe: (product_id: number, recipe: Partial<RecipeData>) => {
+    const token = getTokenFromCookies();
+    return fetchAPI<RecipeData>(`/recipes/${product_id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(recipe),
+    });
+  },
+  deleteRecipe: (recipt_id: number) => {
+    const token = getTokenFromCookies();
+    return fetchAPI<void>(`/recipes/${recipt_id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  }
 }
 
 export const usersAPI = {
