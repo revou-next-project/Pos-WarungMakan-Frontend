@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Search,
-  ShoppingCart,
   List,
   Edit,
   Trash2,
@@ -32,6 +31,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { productsAPI } from "@/lib/api";
+import { ClipLoader } from 'react-spinners';
+import { Suspense } from 'react';
 
 interface Product {
   id: number;
@@ -64,21 +66,12 @@ interface HeldOrder {
 }
 
 export default function SalesInterface() {
-  // Sample product categories
-  const categories = [
-    "All",
-    "Food",
-    "Drinks",
-    "Snacks",
-    "Frozen Food",
-    "Packages",
-  ];
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // State for note dialog
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
-  const [noteDialogProduct, setNoteDialogProduct] = useState<Product | null>(
-    null,
-  );
+  const [noteDialogProduct, setNoteDialogProduct] = useState<Product | null>(null);
   const [noteText, setNoteText] = useState("");
   const [currentItemId, setCurrentItemId] = useState<number | null>(null);
 
@@ -108,88 +101,7 @@ export default function SalesInterface() {
   const [isHeldOrdersDialogOpen, setIsHeldOrdersDialogOpen] = useState(false);
 
   // Sample products data
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: 1,
-      name: "Rice Box Chicken",
-      price: 20000,
-      category: "Food",
-      unit: "box",
-      isPackage: false,
-      image:
-        "https://images.unsplash.com/photo-1603133872878-684f208fb84b?w=300&q=80",
-    },
-    {
-      id: 2,
-      name: "Fishball Satay",
-      price: 10000,
-      category: "Food",
-      unit: "stick",
-      isPackage: false,
-      image:
-        "https://images.unsplash.com/photo-1529042410759-befb1204b468?w=300&q=80",
-    },
-    {
-      id: 3,
-      name: "Iced Tea",
-      price: 5000,
-      category: "Drinks",
-      unit: "cup",
-      isPackage: false,
-      image:
-        "https://images.unsplash.com/photo-1556679343-c1c1c9308e4e?w=300&q=80",
-    },
-    {
-      id: 4,
-      name: "Mineral Water",
-      price: 3000,
-      category: "Drinks",
-      unit: "bottle",
-      isPackage: false,
-      image:
-        "https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=300&q=80",
-    },
-    {
-      id: 5,
-      name: "French Fries",
-      price: 15000,
-      category: "Snacks",
-      unit: "portion",
-      isPackage: false,
-      image:
-        "https://images.unsplash.com/photo-1630384060421-cb20d0e0649d?w=300&q=80",
-    },
-    {
-      id: 6,
-      name: "Frozen Meatballs",
-      price: 25000,
-      category: "Frozen Food",
-      unit: "pack",
-      isPackage: false,
-      image:
-        "https://images.unsplash.com/photo-1529042355636-0e9d8b0b01b7?w=300&q=80",
-    },
-    {
-      id: 7,
-      name: "Package A",
-      price: 25000,
-      category: "Packages",
-      unit: "package",
-      isPackage: true,
-      image:
-        "https://images.unsplash.com/photo-1607877742574-a7d9a7449af3?w=300&q=80",
-    },
-    {
-      id: 8,
-      name: "Package B",
-      price: 35000,
-      category: "Packages",
-      unit: "package",
-      isPackage: true,
-      image:
-        "https://images.unsplash.com/photo-1607877742574-a7d9a7449af3?w=300&q=80",
-    },
-  ]);
+  
 
   // State for current order
   const [currentOrder, setCurrentOrder] = useState<OrderItem[]>([]);
@@ -275,7 +187,40 @@ export default function SalesInterface() {
     setCurrentOrder(currentOrder.filter((item) => item.product.id !== id));
   };
 
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const productsData = await productsAPI.getAll();
+        const transformed = productsData.map((product: any) => ({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          category: product.category,
+          unit: product.unit,
+          isPackage: product.is_package,
+          image: product.image,
+        }));
+        setProducts(transformed);
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  if (loading) {
+    return <ClipLoader />
+  }
+  
+  // Sample product categories
+  const categories = Array.from(new Set(products.map((product) => product.category)));
+  const categoryOptions = ["All", ...categories];
+  
   return (
+    <Suspense fallback={<div>Loading...</div>}>
     <div className="flex flex-col md:flex-row h-full bg-background">
       {/* Main content area */}
       <div className="flex-1 overflow-auto p-4">
@@ -296,23 +241,30 @@ export default function SalesInterface() {
           </div>
         </div>
 
-        {/* Categories tabs */}
-        <Tabs defaultValue="All" className="mb-6">
-          <TabsList className="mb-4 flex flex-wrap">
-            {categories.map((category) => (
+          {/* Categories tabs */}
+          <Tabs defaultValue="All" className="mb-6">
+            <TabsList className="mb-4 flex flex-wrap">
               <TabsTrigger
-                key={category}
-                value={category}
-                onClick={() => setActiveCategory(category)}
+                key="All"
+                value="All"
+                onClick={() => setActiveCategory("All")}
               >
-                {category}
+                All
               </TabsTrigger>
-            ))}
-          </TabsList>
+              {categories.map((category) => (
+                <TabsTrigger
+                  key={category}
+                  value={category}
+                  onClick={() => setActiveCategory(category)}
+                >
+                  {category}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
           {/* Products grid with add functionality */}
           <TabsContent value={activeCategory} className="mt-0">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
               {filteredProducts.map((product) => (
                 <Card key={product.id} className="overflow-hidden">
                   {product.image && (
@@ -338,8 +290,8 @@ export default function SalesInterface() {
                     </p>
                   </CardHeader>
                   <CardContent className="p-4 pt-0">
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium">
+                    <div className="flex flex-col items-center justify-between">
+                      <p className="font-small">
                         {new Intl.NumberFormat("id-ID", {
                           style: "currency",
                           currency: "IDR",
@@ -478,12 +430,12 @@ export default function SalesInterface() {
       </div>
 
       {/* Order summary sidebar */}
-      <div className="w-full md:w-[400px] border-t md:border-t-0 md:border-l bg-card">
+      <div className="w-full md:w-[350px] border-t md:border-t-0 md:border-l bg-card">
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-lg font-semibold">Current Order</h2>
           <div className="flex gap-2">
             <Button
-              variant="primary"
+              variant="default"
               size="sm"
               onClick={processOrder}
               disabled={currentOrder.length === 0}
@@ -726,5 +678,6 @@ export default function SalesInterface() {
         </DialogContent>
       </Dialog>
     </div>
+    </Suspense>
   );
 }
