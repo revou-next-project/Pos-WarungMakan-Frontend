@@ -128,7 +128,7 @@ export default function RecipesPage() {
     setIsEditDialogOpen(false);
   };
 
-  const handleDeleteRecipe = (id) => {
+  const handleDeleteRecipe = (id: number) => {
     // In a real implementation, this would call the API
     const updatedRecipes = recipes.filter((recipe) => recipe.id !== id);
     setRecipes(updatedRecipes);

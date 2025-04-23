@@ -161,29 +161,59 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="container mx-auto p-4 md:p-6">
-      <div className="mb-6 flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => router.push("/dashboard")}
-          className="h-8 w-8"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <h1 className="text-2xl font-bold">Settings</h1>
-      </div>
 
+    <div className="flex h-screen bg-background">
+        {/* Sidebar Navigation */}
+          <div className="w-64 border-r bg-card p-4 flex flex-col">
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-primary">Food POS</h2>
+              <p className="text-sm text-muted-foreground">Restaurant Management</p>
+            </div>
+    
+            <Button
+              variant="ghost"
+              className="w-full justify-start mb-4"
+              size="lg"
+              onClick={() => router.push("/dashboard")}
+            >
+              <ArrowLeft className="mr-2 h-5 w-5" />
+              Back to Dashboard
+            </Button>
+          </div>
+        {/* <div className="mb-6 flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push("/dashboard")}
+            className="h-8 w-8"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold">Settings</h1>
+        </div> */}
+
+      {/* Main Content Area */}
+
+    <div className="flex-1 flex flex-col overflow-hidden">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="users" className="flex items-center gap-2">
-            <User className="h-4 w-4" /> User Management
-          </TabsTrigger>
-          <TabsTrigger value="store" className="flex items-center gap-2">
-            <Store className="h-4 w-4" /> Store Settings
-          </TabsTrigger>
-        </TabsList>
 
+       
+        {/* Header */}
+        <header className="border-b bg-card p-4">
+          <div className="flex items-center justify-between">
+            <TabsList className="mb-6">
+              <TabsTrigger value="users" className="flex items-center gap-2">
+                <User className="h-4 w-4" /> User Management
+              </TabsTrigger>
+              <TabsTrigger value="store" className="flex items-center gap-2">
+                <Store className="h-4 w-4" /> Store Settings
+              </TabsTrigger>
+            </TabsList>
+          </div>
+        </header>
+        
+        {/* Content */}
+        <main className="flex-1 overflow-auto p-6">
         <TabsContent value="users">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -372,7 +402,9 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
         </TabsContent>
+      </main>
       </Tabs>
+    </div>
 
       {/* Add User Dialog */}
       <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
