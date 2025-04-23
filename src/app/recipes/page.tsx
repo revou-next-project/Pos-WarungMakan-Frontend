@@ -39,35 +39,8 @@ import {
 import { ArrowLeft, ChefHat, Plus, Trash2, Edit } from "lucide-react";
 import { recipeAPI } from "@/lib/api";
 import { RecipeData, ingredients } from "@/models/RecipeData";
-import { set } from "date-fns";
+// import { set } from "date-fns";
 // import { add } from "date-fns";
-
-// Mock data for recipes
-// const mockRecipes = [
-//   {
-//     id: 1,
-//     name: "Rice Box Chicken",
-//     description: "Chicken rice box with vegetables",
-//     category: "Food",
-//     ingredients: [
-//       { id: 1, name: "Rice", quantity: 150, unit: "g" },
-//       { id: 2, name: "Chicken", quantity: 100, unit: "g" },
-//       { id: 3, name: "Mixed Vegetables", quantity: 50, unit: "g" },
-//       { id: 4, name: "Cooking Oil", quantity: 15, unit: "ml" },
-//     ],
-//   },
-//   {
-//     id: 2,
-//     name: "Iced Tea",
-//     description: "Refreshing iced tea",
-//     category: "Drinks",
-//     ingredients: [
-//       { id: 5, name: "Tea Bag", quantity: 1, unit: "pcs" },
-//       { id: 6, name: "Sugar", quantity: 15, unit: "g" },
-//       { id: 7, name: "Ice Cubes", quantity: 100, unit: "g" },
-//     ],
-//   },
-// ];
 
 // Mock data for inventory items
 const mockInventoryItems = [
@@ -129,12 +102,7 @@ export default function RecipesPage() {
   }, [isAddDialogOpen, isEditDialogOpen, isDeleteDialogOpen]);
 
   const handleAddRecipe = () => {
-    // In a real implementation, this would call the API
-    // const addedRecipe = {
-    //   ...newRecipe,
-    //   id: recipes.length + 1,
-    // };
-    // setRecipes([...recipes, addedRecipe]);
+    
     recipeAPI.createRecipe(newRecipe);
     console.log("Added recipe:", newRecipe);
     resetForm();
@@ -142,11 +110,7 @@ export default function RecipesPage() {
   };
 
   const handleEditRecipe = () => {
-    // In a real implementation, this would call the API
-    // const updatedRecipes = recipes.map((recipe) =>
-    //   recipe.id === currentRecipe.id ? currentRecipe : recipe,
-    // );
-    // setRecipes(updatedRecipes);
+    
     console.log("Edited recipe:", currentRecipe);
     recipeAPI.updateRecipe(currentRecipe.id, currentRecipe);
     resetForm();
@@ -154,9 +118,7 @@ export default function RecipesPage() {
   };
 
   const handleDeleteRecipe = (product_id: number) => {
-    // In a real implementation, this would call the API
-    // const updatedRecipes = recipes.filter((recipe) => recipe.id !== id);
-    // setRecipes(updatedRecipes);
+    
     recipeAPI.deleteRecipe(product_id);
     setIsDeleteDialogOpen(false);
   };
