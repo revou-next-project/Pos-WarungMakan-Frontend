@@ -24,7 +24,7 @@ import SalesInterface from "@/components/pos/SalesInterface";
 import { useRole } from "@/contexts/roleContext";
 import moment from 'moment';
 import { ordersAPI } from '@/lib/api';
-import { getCurrentUser } from "@/lib/utils";
+import { getCurrentUser, getCurrentUserId } from "@/lib/utils";
 
 interface Order {
   id: number;
@@ -43,6 +43,7 @@ export default function DashboardPage() {
   const [todaysOrders, setTodaysOrders] = useState<Order[]>([]);
   const [totalOrders, setTotalOrders] = useState<number>(0);
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
+  const [userId, setUserId] = useState<number | null>(null);
   const router = useRouter();
   
 
@@ -60,6 +61,9 @@ export default function DashboardPage() {
   useEffect(() => {
     const current = getCurrentUser();
     setUser(current);
+
+    const id = getCurrentUserId();
+    setUserId(id);
   }, []);
 
   useEffect(() => {
@@ -190,7 +194,7 @@ export default function DashboardPage() {
                   <CardTitle>Sales Interface</CardTitle>
                 </CardHeader>
                 <CardContent className="px-0 pb-0">
-                  <SalesInterface />
+                <SalesInterface userId={userId} />
                 </CardContent>
               </Card>
             </TabsContent>

@@ -24,12 +24,12 @@ export function parseJwt(token: string): any {
 export function getCurrentUserId(): number | null {
   const token = getTokenFromCookies();
   if (!token) return null;
-  const payload = parseJwt(token);
-  return payload?.id ?? null;
+  const payload = JSON.parse(atob(token.split(".")[1]));
+  return payload?.sub ? parseInt(payload.sub) : null;
 }
 
 export function getCurrentUser(): { name: string; role: string } | null {
-  if (typeof window === "undefined") return null; // ⛔ hindari SSR
+  if (typeof window === "undefined") return null;
   const token = getTokenFromCookies();
   if (!token) return null;
 

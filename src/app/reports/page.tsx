@@ -6,7 +6,6 @@ import { format } from 'date-fns'
 import { ordersAPI } from '@/lib/api'
 import { Order, OrderDetail } from '@/lib/types'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -38,17 +37,21 @@ export default function ReportsPage() {
   const [selectedInvoice, setSelectedInvoice] = useState<number | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [orderDetail, setOrderDetail] = useState<OrderDetail | null>(null)
-
+  const [page, setPage] = useState(1);
+  
   // Fetch orders list
   useEffect(() => {
-    ordersAPI.getAll()
-      .then((data: any) => {
-        if (Array.isArray(data.data)) setOrders(data.data)
+    const offset = (page - 1) * 10;
+  
+    ordersAPI
+      .getAllPaginated({ status: "paid", limit: 10, offset })
+      .then((data) => {
+        if (Array.isArray(data.data)) setOrders(data.data);
       })
       .catch((err) => {
-        console.error('Failed to fetch orders:', err)
-      })
-  }, [])
+        console.error("Failed to fetch orders:", err);
+      });
+  }, [page]);
 
   // Fetch detail when invoice is selected
   useEffect(() => {
@@ -157,7 +160,6 @@ export default function ReportsPage() {
                     mode={filterType === 'yearly' ? 'year' : filterType === 'monthly' ? 'month' : 'day'}
                     selected={date}
                     onSelect={(date) => date && setDate(date)}
-                    initialFocus
                   />
                 </PopoverContent>
               </Popover>
@@ -232,7 +234,25 @@ export default function ReportsPage() {
               </div>
             </CardContent>
           </Card>
-
+          <div className="flex justify-between mt-4">
+  <Button
+    variant="outline"
+    size="sm"
+    disabled={page === 1}
+    onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+  >
+    Previous
+  </Button>
+  <span className="text-sm text-muted-foreground">Page {page}</span>
+  <Button
+    variant="outline"
+    size="sm"
+    disabled={orders.length < 10} // asumsi full page = masih ada next
+    onClick={() => setPage((prev) => prev + 1)}
+  >
+    Next
+  </Button>
+</div>
           {orderDetail && (
             <Card className="mt-6">
               <CardHeader><CardTitle>Invoice Details</CardTitle></CardHeader>

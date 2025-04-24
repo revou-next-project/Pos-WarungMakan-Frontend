@@ -21,7 +21,10 @@ import HeldOrdersDialog from "./HeldOrdersDialog";
 import { Product, OrderItem, HeldOrder, CustomerType, DiscountType } from "@/lib/types";
 import { calculateSubtotal, filterProducts, getUniqueCategories } from "@/lib/utils";;
 
-export default function SalesInterface() {
+interface SalesInterfaceProps {
+  userId: number | null;
+}
+export default function SalesInterface({ userId }: SalesInterfaceProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 

@@ -213,6 +213,24 @@ export const ordersAPI = {
     });
   },
 
+  getAllPaginated: ({
+    status = "paid",
+    limit = 10,
+    offset = 0,
+  }: {
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const token = getTokenFromCookies();
+    const query = `?status=${status}&limit=${limit}&offset=${offset}`;
+    return fetchAPI<{ data: Order[] }>(`/orders${query}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
   getById: (id: string) => {
     const token = getTokenFromCookies();
     return fetchAPI(`/orders/${id}`, {
