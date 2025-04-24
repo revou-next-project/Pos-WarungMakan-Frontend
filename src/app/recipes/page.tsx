@@ -37,27 +37,29 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ArrowLeft, ChefHat, Plus, Trash2, Edit } from "lucide-react";
-import { recipeAPI } from "@/lib/api";
+import { recipeAPI, inventoryAPI, InventoryItem } from "@/lib/api";
 import { RecipeData, ingredients } from "@/models/RecipeData";
+import { ca } from "date-fns/locale";
 // import { set } from "date-fns";
 // import { add } from "date-fns";
 
 // Mock data for inventory items
-const mockInventoryItems = [
-  { id: 1, name: "Ayam Fillet", current_stock: 5.35, unit: "kg" },
-  { id: 2, name: "Beras", current_stock: 24.8, unit: "kg" },
-  { id: 3, name: "Minyak Goreng", current_stock: 7.95, unit: "liter" },
-  { id: 4, name: "Fish Ball", current_stock: 1.5, unit: "pack" },
-  { id: 5, name: "Gula", current_stock: 3.99, unit: "kg" },
-  { id: 6, name: "Garam Himalaya", current_stock: 5.0, unit: "kg" },
-  { id: 7, name: "gak nok bahan e", current_stock: 5.0, unit: "kg" },
-];
+// const mockInventoryItems = [
+//   { id: 1, name: "Ayam Fillet", current_stock: 5.35, unit: "kg" },
+//   { id: 2, name: "Beras", current_stock: 24.8, unit: "kg" },
+//   { id: 3, name: "Minyak Goreng", current_stock: 7.95, unit: "liter" },
+//   { id: 4, name: "Fish Ball", current_stock: 1.5, unit: "pack" },
+//   { id: 5, name: "Gula", current_stock: 3.99, unit: "kg" },
+//   { id: 6, name: "Garam Himalaya", current_stock: 5.0, unit: "kg" },
+//   { id: 7, name: "gak nok bahan e", current_stock: 5.0, unit: "kg" },
+// ];
 
 export default function RecipesPage() {
   const router = useRouter();
   // const [recipes, setRecipes] = useState(mockRecipes);
   const [recipes, setRecipes] = useState<RecipeData[]>([]);
-  const [inventoryItems, setInventoryItems] = useState(mockInventoryItems);
+  // const [inventoryItems, setInventoryItems] = useState(mockInventoryItems);
+  const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -93,34 +95,60 @@ export default function RecipesPage() {
 
   // In a real implementation, this would fetch from the API
   useEffect(() => {
-    // Fetch recipes and inventory items from API
-    // For now, we're using mock data
-    recipeAPI.getAll().then((data) => {
-      setRecipes(data);
-    })
+    try {
+      recipeAPI.getAll().then((data) => {
+        setRecipes(data);
+      });
+    } catch (error) {
+      console.error("Error fetching recipes:", error);
+    }
+
+    try{
+      inventoryAPI.getAll().then((data) => {
+        setInventoryItems(data);
+      });
+    } catch (error) {
+      console.error("Error fetching inventory items:", error);
+    }
 
   }, [isAddDialogOpen, isEditDialogOpen, isDeleteDialogOpen]);
 
   const handleAddRecipe = () => {
-    
-    recipeAPI.createRecipe(newRecipe);
-    console.log("Added recipe:", newRecipe);
-    resetForm();
-    setIsAddDialogOpen(false);
+
+    try {
+     recipeAPI.createRecipe(newRecipe);
+    } catch (error) {
+      console.error("Error adding recipe:", error);
+    } finally {
+      resetForm();
+      setIsAddDialogOpen(false);
+
+    }
   };
 
   const handleEditRecipe = () => {
-    
-    console.log("Edited recipe:", currentRecipe);
-    recipeAPI.updateRecipe(currentRecipe.id, currentRecipe);
-    resetForm();
-    setIsEditDialogOpen(false);
+  
+    try {
+      recipeAPI.updateRecipe(currentRecipe.id, currentRecipe);
+    } catch (error) {
+      console.error("Error updating recipe:", error);
+    } finally {
+      resetForm();
+      setIsEditDialogOpen(false);
+    }
+
   };
 
   const handleDeleteRecipe = (product_id: number) => {
     
-    recipeAPI.deleteRecipe(product_id);
-    setIsDeleteDialogOpen(false);
+    try {
+      recipeAPI.deleteRecipe(product_id);
+    } catch (error) {
+      console.error("Error deleting recipe:", error);
+    } finally { 
+      setIsDeleteDialogOpen(false);
+    }
+    
   };
 
   const handleAddIngredient = () => {
@@ -178,7 +206,7 @@ export default function RecipesPage() {
     }
   };
 
-  const handleRemoveIngredient = (ingredientId) => {
+  const handleRemoveIngredient = (ingredientId: number) => {
     setNewRecipe({
       ...newRecipe,
       ingredients: newRecipe.ingredients.filter(
@@ -186,6 +214,15 @@ export default function RecipesPage() {
       ),
     });
   };
+
+  const handleRemoveCurrentIngredient = (ingredientId: number) => {
+    setCurrentRecipe({
+      ...currentRecipe,
+      ingredients: currentRecipe.ingredients.filter(
+        (ingredient) => ingredient.id !== ingredientId,
+      ),
+    });
+  }
 
   const resetForm = () => {
     setNewRecipe({
@@ -440,14 +477,18 @@ export default function RecipesPage() {
                   <div className="col-span-3">
                     <Input
                       type="number"
-                      placeholder="Quantity"
-                      value={newIngredient.quantity || ""}
-                      onChange={(e) =>
+                      // placeholder="Quantity"
+                      value={newIngredient.quantity || 0}
+                      step="any"
+                      inputMode="decimal"
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const parsedValue = parseFloat(value);
                         setNewIngredient({
                           ...newIngredient,
-                          quantity: parseInt(e.target.value, 10) || 0,
-                        })
-                      }
+                          quantity: !isNaN(parsedValue) ? parsedValue : 0, // Parse as number and handle invalid input
+                        });
+                      }}
                     />
                   </div>
                   <div className="col-span-2">
@@ -580,7 +621,7 @@ export default function RecipesPage() {
                               variant="ghost"
                               size="icon"
                               onClick={() =>
-                                handleRemoveIngredient(ingredient.id)
+                                handleRemoveCurrentIngredient(ingredient.id)
                               }
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
@@ -619,14 +660,18 @@ export default function RecipesPage() {
                   <div className="col-span-3">
                     <Input
                       type="number"
-                      placeholder="Quantity"
-                      value={newIngredient.quantity || ""}
-                      onChange={(e) =>
+                      // placeholder="Quantity"
+                      value={newIngredient.quantity || 0}
+                      step="any"
+                      inputMode="decimal"
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const parsedValue = parseFloat(value);
                         setNewIngredient({
                           ...newIngredient,
-                          quantity: parseInt(e.target.value, 10) || 0,
-                        })
-                      }
+                          quantity: !isNaN(parsedValue) ? parsedValue : 0, // Parse as number and handle invalid input
+                        });
+                      }}
                     />
                   </div>
                   <div className="col-span-2">
