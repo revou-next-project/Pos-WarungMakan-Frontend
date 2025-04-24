@@ -234,12 +234,17 @@ export const ordersAPI = {
 // Inventory API
 export const inventoryAPI = {
   getAll: (params?: { category?: string; lowStock?: boolean }) => {
+    const token = getTokenFromCookies();
     const queryParams = [];
     if (params?.category) queryParams.push(`category=${params.category}`);
     if (params?.lowStock) queryParams.push("low_stock=true");
 
     const query = queryParams.length > 0 ? `?${queryParams.join("&")}` : "";
-    return fetchAPI<InventoryItem[]>(`/inventory${query}`);
+    return fetchAPI<InventoryItem[]>(`/inventory${query}`,{
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
   },
 
   getById: (id: number) => {
