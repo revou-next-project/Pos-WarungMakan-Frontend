@@ -145,12 +145,9 @@ export const authAPI = {
   },
 };
 
-// Helper function to get the token from localStorage
-const getAuthToken = () => localStorage.getItem("token");
-
 export const productsAPI = {
   getAll: (category?: string) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     const query = category ? `?category=${category}` : "";
 
     return fetchAPI<Product[]>(`/products${query}`, {
@@ -161,7 +158,7 @@ export const productsAPI = {
   },
 
   getById: (id: number) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     return fetchAPI<Product>(`/products/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -170,7 +167,7 @@ export const productsAPI = {
   },
 
   create: (product: ProductCreate) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     return fetchAPI<Product>("/products", {
       method: "POST",
       body: JSON.stringify(product),
@@ -182,7 +179,7 @@ export const productsAPI = {
   },
 
   update: (id: number, product: Partial<ProductCreate>) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     return fetchAPI<Product>(`/products/${id}`, {
       method: "PUT",
       body: JSON.stringify(product),
@@ -194,7 +191,7 @@ export const productsAPI = {
   },
 
   delete: (id: number) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     return fetchAPI<void>(`/products/${id}`, {
       method: "DELETE",
       headers: {
@@ -208,7 +205,7 @@ export const productsAPI = {
 // Orders API
 export const ordersAPI = {
   getAll: (status?: string) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     const query = status ? `?status=${status}` : "";
     return fetchAPI<{ data: Order[] }>(`/orders${query}`, {
       headers: {
@@ -218,7 +215,7 @@ export const ordersAPI = {
   },
 
   getById: (id: string) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     return fetchAPI<OrderDetail>(`/orders/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -227,7 +224,7 @@ export const ordersAPI = {
   },
 
   create: (order: OrderCreate) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     return fetchAPI<Order>("/orders", {
       method: "POST",
       body: JSON.stringify(order),
@@ -239,7 +236,7 @@ export const ordersAPI = {
   },
 
   updateStatus: (id: string, status: string) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     return fetchAPI<Order>(`/orders/${id}/status`, {
       method: "PUT",
       body: JSON.stringify({ status }),
