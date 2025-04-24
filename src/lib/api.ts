@@ -5,7 +5,6 @@
 import { UserData } from "@/models/UserData";
 import { RecipeData } from "@/models/RecipeData";
 import { getTokenFromCookies } from "./utils";
-import { create } from "domain";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URLL || "https://api-pwk.ahmadcloud.my.id";
 
@@ -216,36 +215,32 @@ export const ordersAPI = {
 
   getById: (id: string) => {
     const token = getTokenFromCookies();
-    return fetchAPI<OrderDetail>(`/orders/${id}`, {
+    return fetchAPI(`/orders/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
   },
 
-  create: (order: OrderCreate) => {
+  getHeldOrders: () => {
     const token = getTokenFromCookies();
-    return fetchAPI<Order>("/orders", {
+    return fetchAPI<{ data: any[] }>("/orders?status=unpaid", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  create: (payload: any) => {
+    const token = getTokenFromCookies();
+    return fetchAPI("/orders", {
       method: "POST",
-      body: JSON.stringify(order),
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
       },
+      body: JSON.stringify(payload),
     });
-  },
-
-  updateStatus: (id: string, status: string) => {
-    const token = getTokenFromCookies();
-    return fetchAPI<Order>(`/orders/${id}/status`, {
-      method: "PUT",
-      body: JSON.stringify({ status }),
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-  },
+  }
 };
 
 // Inventory API
@@ -315,15 +310,6 @@ export interface Order {
   payment_method: string;
   created_at: string;
   updated_at: string;
-}
-
-export interface OrderCreate {
-  order_number: string;
-  timestamp: string;
-  status: "waiting" | "cooking" | "completed" | "canceled";
-  order_type: "Dine In" | "GoFood" | "Grab" | "Shopee" | "Other";
-  total_amount: number;
-  items: OrderItemCreate[];
 }
 
 export interface InventoryItem {

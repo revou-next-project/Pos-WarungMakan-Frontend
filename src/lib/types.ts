@@ -23,3 +23,36 @@ export interface OrderItem {
 export interface OrderDetail extends Omit<Order, 'timestamp'> {
   items: OrderItem[];
 }
+
+export interface Product {
+  id: number;
+  name: string;
+  price: number;
+  category: string;
+  unit: string;
+  isPackage: boolean;
+  image?: string;
+}
+
+export interface OrderItem {
+  product: Product;
+  quantity: number;
+  subtotal: number;
+  note: string;
+  discount?: number; // Discount amount in percentage
+}
+
+export interface HeldOrder {
+  id: string;
+  items: OrderItem[];
+  timestamp: string;
+  total: number;
+  customerType: "dine-in" | "grab" | "gojek" | "shopee";
+  discountInfo?: {
+    type: "percentage" | "nominal";
+    value: string;
+  };
+}
+
+export type CustomerType = "dine-in" | "grab" | "gojek" | "shopee";
+export type DiscountType = "percentage" | "nominal";
