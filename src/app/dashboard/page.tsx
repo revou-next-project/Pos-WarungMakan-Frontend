@@ -21,10 +21,10 @@ import {
   Wallet,
 } from "lucide-react";
 import SalesInterface from "@/components/pos/SalesInterface";
-
 import { useRole } from "@/contexts/roleContext";
 import moment from 'moment';
 import { ordersAPI } from '@/lib/api';
+import { getCurrentUser } from "@/lib/utils";
 
 interface Order {
   id: number;
@@ -42,16 +42,9 @@ interface Order {
 export default function DashboardPage() {
   const [todaysOrders, setTodaysOrders] = useState<Order[]>([]);
   const [totalOrders, setTotalOrders] = useState<number>(0);
-
+  const [user, setUser] = useState<{ name: string; role: string } | null>(null);
   const router = useRouter();
   
-
-  // Mock user data - in a real app this would come from authentication
-  const user = {
-    name: "Admin User",
-    role: "Admin",
-    avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=admin",
-  };
 
   const handleLogout = () => {
     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
@@ -65,12 +58,22 @@ export default function DashboardPage() {
   const formattedDate = moment().format('YYYY-MM-DD');
 
   useEffect(() => {
-    ordersAPI.getAll('status').then((response) => {
-      const totalOrders = response.length;
-      setTotalOrders(totalOrders);
-    });
+    const current = getCurrentUser();
+    setUser(current);
   }, []);
 
+  useEffect(() => {
+    const todayDate = moment().format("YYYY-MM-DD");
+  
+    ordersAPI.getAll("paid").then((response) => {
+      const ordersToday = response.data.filter((order) =>
+        moment(order.paid_at).isSame(todayDate, "day")
+      );
+  
+      setTodaysOrders(ordersToday);
+      setTotalOrders(ordersToday.length); // total paid hari ini
+    });
+  }, []);
 
   return (
     <div className="flex h-screen bg-background">
@@ -144,12 +147,14 @@ export default function DashboardPage() {
         <div className="mt-auto pt-4 border-t">
           <div className="flex items-center gap-3">
             <Avatar>
-              <AvatarImage src={user.avatar} alt={user.name} />
-              <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+              <AvatarImage src={undefined} alt={user?.name} />
+              <AvatarFallback>{user?.name?.charAt(0).toUpperCase() || "?"}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <p className="text-sm font-medium">{user.name}</p>
-              <p className="text-xs text-muted-foreground">{user.role}</p>
+              <p className="text-sm font-medium">{user?.name || "Guest"}</p>
+              <p className="text-xs text-muted-foreground capitalize">
+                {user?.role || "unknown"}
+              </p>
             </div>
             <Button variant="ghost" size="icon" onClick={handleLogout}>
               <LogOut className="h-5 w-5 text-muted-foreground" />
@@ -170,7 +175,7 @@ export default function DashboardPage() {
                 Today's Orders: {todaysOrders.length}
               </Button>
               <Button variant="outline" size="sm">
-                Date: {moment(formattedDate).format('YYYY-MM-DD')}
+              Date: {moment().format('dddd, MMMM D, YYYY')}
               </Button>
             </div>
           </div>

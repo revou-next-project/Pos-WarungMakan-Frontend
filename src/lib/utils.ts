@@ -25,7 +25,23 @@ export function getCurrentUserId(): number | null {
   const token = getTokenFromCookies();
   if (!token) return null;
   const payload = parseJwt(token);
-  return payload?.sub ? parseInt(payload.sub) : null;
+  return payload?.id ?? null;
+}
+
+export function getCurrentUser(): { name: string; role: string } | null {
+  if (typeof window === "undefined") return null; // ⛔ hindari SSR
+  const token = getTokenFromCookies();
+  if (!token) return null;
+
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return {
+      name: payload.username || "User",
+      role: payload.role || "unknown",
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function formatDate(utcDateString: string): string {
