@@ -27,8 +27,8 @@ A full-featured Point of Sale (POS) system built using **Next.js**, designed for
 - Exportable records (coming soon)
 
 ### 💰 Cash Management
-- Track cash balance by shift
-- Reconciliation per user (cashier)
+- Track cash balance by shift (soon)
+- Reconciliation per user (soon)
 
 ### 🔐 Authentication & Role
 - Login with token-based auth
