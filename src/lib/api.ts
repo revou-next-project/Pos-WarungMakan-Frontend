@@ -5,10 +5,7 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api-pwk.ahmadcloud.my.id";
 
 // Generic fetch function with error handling
-async function fetchAPI<T>(
-  endpoint: string,
-  options: RequestInit = {},
-): Promise<T> {
+async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
   const headers = {
@@ -25,9 +22,7 @@ async function fetchAPI<T>(
     let errorMessage;
     try {
       const errorData = await response.json();
-      errorMessage = Array.isArray(errorData.detail)
-        ? errorData.detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
-        : errorData.detail || JSON.stringify(errorData);
+      errorMessage = Array.isArray(errorData.detail) ? errorData.detail.map((e: any) => e.msg || JSON.stringify(e)).join(", ") : errorData.detail || JSON.stringify(errorData);
     } catch (e) {
       errorMessage = `API error: ${response.status}`;
     }
@@ -41,9 +36,9 @@ async function fetchAPI<T>(
 export const authAPI = {
   login: async (username: string, password: string) => {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ username, password }),
     });
@@ -122,7 +117,6 @@ export const productsAPI = {
   },
 };
 
-
 // Orders API
 export const ordersAPI = {
   getAll: (status?: string) => {
@@ -173,29 +167,60 @@ export const ordersAPI = {
 // Inventory API
 export const inventoryAPI = {
   getAll: (params?: { category?: string; lowStock?: boolean }) => {
+    const token = getAuthToken();
     const queryParams = [];
     if (params?.category) queryParams.push(`category=${params.category}`);
     if (params?.lowStock) queryParams.push("low_stock=true");
 
     const query = queryParams.length > 0 ? `?${queryParams.join("&")}` : "";
-    return fetchAPI<InventoryItem[]>(`/inventory${query}`);
+    return fetchAPI<InventoryItem[]>(`/inventory${query}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
   },
 
   getById: (id: number) => {
-    return fetchAPI<InventoryItem>(`/inventory/${id}`);
+    const token = getAuthToken();
+    return fetchAPI<InventoryItem>(`/inventory/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
   },
 
   create: (item: InventoryItemCreate) => {
+    const token = getAuthToken();
     return fetchAPI<InventoryItem>("/inventory", {
       method: "POST",
       body: JSON.stringify(item),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
     });
   },
 
   update: (id: number, item: Partial<InventoryItemCreate>) => {
+    const token = getAuthToken();
     return fetchAPI<InventoryItem>(`/inventory/${id}`, {
       method: "PUT",
       body: JSON.stringify(item),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json", // Make sure to set the content type for PUT requests
+      },
+    });
+  },
+
+  delete: (id: number) => {
+    const token = getAuthToken();
+    return fetchAPI<void>(`/inventory/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
   },
 };
