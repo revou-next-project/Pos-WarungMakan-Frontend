@@ -41,7 +41,7 @@ export default function ReportsPage() {
   
   // Fetch orders list
   useEffect(() => {
-    const offset = (page - 1) * 10;
+    const offset = (page - 1) * 20;
   
     ordersAPI
       .getAllPaginated({ status: "paid", limit: 10, offset })

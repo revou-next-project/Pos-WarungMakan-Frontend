@@ -71,7 +71,7 @@ export function OrderStep({
             <span>Subtotal</span>
             <span>{formatCurrency(subtotal)}</span>
           </div>
-          {customerType !== "dine-in" && (
+          {customerType !== "pilih" && (
             <div className="flex justify-between">
               <span>Customer Type</span>
               <span className="capitalize">{customerType}</span>

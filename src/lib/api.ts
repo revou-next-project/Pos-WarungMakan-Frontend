@@ -214,16 +214,16 @@ export const ordersAPI = {
   },
 
   getAllPaginated: ({
-    status = "paid",
-    limit = 10,
+    payment_status = "paid",
+    limit = 20,
     offset = 0,
   }: {
-    status?: string;
+    payment_status?: string;
     limit?: number;
     offset?: number;
   }) => {
     const token = getTokenFromCookies();
-    const query = `?status=${status}&limit=${limit}&offset=${offset}`;
+    const query = `?payment_status=${payment_status}&limit=${limit}&offset=${offset}`;
     return fetchAPI<{ data: Order[] }>(`/orders${query}`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -270,28 +270,54 @@ export const inventoryAPI = {
     if (params?.lowStock) queryParams.push("low_stock=true");
 
     const query = queryParams.length > 0 ? `?${queryParams.join("&")}` : "";
-    return fetchAPI<InventoryItem[]>(`/inventory${query}`,{
+    return fetchAPI<InventoryItem[]>(`/inventory${query}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
+  },
+
+  getById: (id: number) => {
+    const token = getTokenFromCookies();
+    return fetchAPI<InventoryItem>(`/inventory/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
   },
 
-  getById: (id: number) => {
-    return fetchAPI<InventoryItem>(`/inventory/${id}`);
-  },
-
   create: (item: InventoryItemCreate) => {
+    const token = getTokenFromCookies();
     return fetchAPI<InventoryItem>("/inventory", {
       method: "POST",
       body: JSON.stringify(item),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
     });
   },
 
   update: (id: number, item: Partial<InventoryItemCreate>) => {
+    const token = getTokenFromCookies();
     return fetchAPI<InventoryItem>(`/inventory/${id}`, {
       method: "PUT",
       body: JSON.stringify(item),
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json", // Make sure to set the content type for PUT requests
+      },
+    });
+  },
+
+  delete: (id: number) => {
+    const token = getTokenFromCookies();
+    return fetchAPI<void>(`/inventory/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     });
   },
 };

@@ -25,6 +25,7 @@ import { useRole } from "@/contexts/roleContext";
 import moment from 'moment';
 import { ordersAPI } from '@/lib/api';
 import { getCurrentUser, getCurrentUserId } from "@/lib/utils";
+import AdminSidebar from "@/components/layout/AdminSidebar";
 
 interface Order {
   id: number;
@@ -82,89 +83,8 @@ export default function DashboardPage() {
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar Navigation */}
-      <div className="w-64 border-r bg-card p-4 flex flex-col">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-primary">Food POS</h2>
-          <p className="text-sm text-muted-foreground">Restaurant Management</p>
-        </div>
-
-        <nav className="space-y-2 flex-1">
-          <Button variant="ghost" className={`${role === "admin" || role === "cashier" ? "w-full justify-start" : "hidden"}`} size="lg">
-            <ShoppingCart className="mr-2 h-5 w-5" />
-            Sales
-          </Button>
-          <Button
-            variant="ghost"
-            className={`${role === "admin" ? "w-full justify-start" : "hidden"}`}
-            size="lg"
-            onClick={() => router.push("/inventory")}
-          >
-            <ShoppingCart className="mr-2 h-5 w-5" />
-            Inventory
-          </Button>
-          <Button
-            variant="ghost"
-            className={`${role === "admin" ? "w-full justify-start" : "hidden"}`}
-            size="lg"
-            onClick={() => router.push("/products")}
-          >
-            <Package className="mr-2 h-5 w-5" />
-            Products
-          </Button>
-          <Button
-            variant="ghost"
-            className={`${role === "admin" ? "w-full justify-start" : "hidden"}`}
-            size="lg"
-            onClick={() => router.push("/recipes")}
-          >
-            <ChefHat className="mr-2 h-5 w-5" />
-            Recipes
-          </Button>
-          <Button
-            variant="ghost"
-            className={`${role === "admin" ? "w-full justify-start" : "hidden"}`}
-            size="lg"
-            onClick={() => router.push("/reports")}
-          >
-            <BarChart3 className="mr-2 h-5 w-5" />
-            Reports
-          </Button>
-          <Button
-            variant="ghost"
-            className={`${role === "admin" ? "w-full justify-start" : "hidden"}`}
-            size="lg"
-            onClick={() => router.push("/cash-balance")}
-          >
-            <Wallet className="mr-2 h-5 w-5" />
-            Cash Balance
-          </Button>
-
-          <Button variant="ghost" 
-            className={`${role === "admin" ? "w-full justify-start" : "hidden"}`}
-            size="lg" 
-            onClick={() => router.push("/settings")}>
-            <Settings className="mr-2 h-5 w-5" />
-            Settings
-          </Button>
-        </nav>
-
-        <div className="mt-auto pt-4 border-t">
-          <div className="flex items-center gap-3">
-            <Avatar>
-              <AvatarImage src={undefined} alt={user?.name} />
-              <AvatarFallback>{user?.name?.charAt(0).toUpperCase() || "?"}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <p className="text-sm font-medium">{user?.name || "Guest"}</p>
-              <p className="text-xs text-muted-foreground capitalize">
-                {user?.role || "unknown"}
-              </p>
-            </div>
-            <Button variant="ghost" size="icon" onClick={handleLogout}>
-              <LogOut className="h-5 w-5 text-muted-foreground" />
-            </Button>
-          </div>
-        </div>
+      <div className="flex h-screen bg-background">
+        <AdminSidebar />
       </div>
 
       {/* Main Content Area */}
