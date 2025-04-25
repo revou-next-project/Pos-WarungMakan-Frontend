@@ -2,7 +2,11 @@
  * API client for interacting with the backend
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api-pwk.ahmadcloud.my.id";
+import { UserData } from "@/models/UserData";
+import { RecipeData } from "@/models/RecipeData";
+import { getTokenFromCookies } from "./utils";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URLL || "https://api-pwk.ahmadcloud.my.id";
 
 // Generic fetch function with error handling
 async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -32,6 +36,82 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
   return response.json();
 }
 
+export const recipeAPI = {
+  getAll: () => {
+    const token = getTokenFromCookies();
+    return fetchAPI<RecipeData[]>("/recipes", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+  createRecipe: (recipe: RecipeData) => {
+    const token = getTokenFromCookies();
+    return fetchAPI<RecipeData>("/recipes", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(recipe),
+    });
+  },
+  updateRecipe: (product_id: number, recipe: Partial<RecipeData>) => {
+    const token = getTokenFromCookies();
+    return fetchAPI<RecipeData>(`/recipes/${product_id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(recipe),
+    });
+  },
+  deleteRecipe: (recipt_id: number) => {
+    const token = getTokenFromCookies();
+    return fetchAPI<void>(`/recipes/${recipt_id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+};
+
+export const usersAPI = {
+  getAll: () => {
+    const token = getTokenFromCookies();
+    return fetchAPI<UserData[]>(`/users`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+  updateUser: (id: number, user: Partial<UserData>) => {
+    const token = getTokenFromCookies();
+    return fetchAPI<UserData>(`/users/${id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(user),
+    });
+  },
+  createUser: (user: UserData) => {
+    return fetchAPI<UserData>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(user),
+    });
+  },
+  deleteUser: (id: number) => {
+    const token = getTokenFromCookies();
+    return fetchAPI<void>(`/users/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+};
+
 // Auth API (changed to use username instead of email)
 export const authAPI = {
   login: async (username: string, password: string) => {
@@ -58,12 +138,9 @@ export const authAPI = {
   },
 };
 
-// Helper function to get the token from localStorage
-const getAuthToken = () => localStorage.getItem("token");
-
 export const productsAPI = {
   getAll: (category?: string) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     const query = category ? `?category=${category}` : "";
 
     return fetchAPI<Product[]>(`/products${query}`, {
@@ -74,7 +151,7 @@ export const productsAPI = {
   },
 
   getById: (id: number) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     return fetchAPI<Product>(`/products/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -83,7 +160,7 @@ export const productsAPI = {
   },
 
   create: (product: ProductCreate) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     return fetchAPI<Product>("/products", {
       method: "POST",
       body: JSON.stringify(product),
@@ -95,7 +172,7 @@ export const productsAPI = {
   },
 
   update: (id: number, product: Partial<ProductCreate>) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     return fetchAPI<Product>(`/products/${id}`, {
       method: "PUT",
       body: JSON.stringify(product),
@@ -107,7 +184,7 @@ export const productsAPI = {
   },
 
   delete: (id: number) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     return fetchAPI<void>(`/products/${id}`, {
       method: "DELETE",
       headers: {
@@ -120,9 +197,18 @@ export const productsAPI = {
 // Orders API
 export const ordersAPI = {
   getAll: (status?: string) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     const query = status ? `?status=${status}` : "";
+    return fetchAPI<{ data: Order[] }>(`/orders${query}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
 
+  getAllPaginated: ({ payment_status = "paid", limit = 20, offset = 0 }: { payment_status?: string; limit?: number; offset?: number }) => {
+    const token = getTokenFromCookies();
+    const query = `?payment_status=${payment_status}&limit=${limit}&offset=${offset}`;
     return fetchAPI<{ data: Order[] }>(`/orders${query}`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -131,35 +217,31 @@ export const ordersAPI = {
   },
 
   getById: (id: string) => {
-    const token = getAuthToken();
-    return fetchAPI<OrderDetail>(`/orders/${id}`, {
+    const token = getTokenFromCookies();
+    return fetchAPI(`/orders/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
     });
   },
 
-  create: (order: OrderCreate) => {
-    const token = getAuthToken();
-    return fetchAPI<Order>("/orders", {
+  getHeldOrders: () => {
+    const token = getTokenFromCookies();
+    return fetchAPI<{ data: any[] }>("/orders?status=unpaid", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  create: (payload: any) => {
+    const token = getTokenFromCookies();
+    return fetchAPI("/orders", {
       method: "POST",
-      body: JSON.stringify(order),
       headers: {
         Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
       },
-    });
-  },
-
-  updateStatus: (id: string, status: string) => {
-    const token = getAuthToken();
-    return fetchAPI<Order>(`/orders/${id}/status`, {
-      method: "PUT",
-      body: JSON.stringify({ status }),
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
+      body: JSON.stringify(payload),
     });
   },
 };
@@ -167,7 +249,7 @@ export const ordersAPI = {
 // Inventory API
 export const inventoryAPI = {
   getAll: (params?: { category?: string; lowStock?: boolean }) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     const queryParams = [];
     if (params?.category) queryParams.push(`category=${params.category}`);
     if (params?.lowStock) queryParams.push("low_stock=true");
@@ -182,7 +264,7 @@ export const inventoryAPI = {
   },
 
   getById: (id: number) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     return fetchAPI<InventoryItem>(`/inventory/${id}`, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -191,7 +273,7 @@ export const inventoryAPI = {
   },
 
   create: (item: InventoryItemCreate) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     return fetchAPI<InventoryItem>("/inventory", {
       method: "POST",
       body: JSON.stringify(item),
@@ -203,7 +285,7 @@ export const inventoryAPI = {
   },
 
   update: (id: number, item: Partial<InventoryItemCreate>) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     return fetchAPI<InventoryItem>(`/inventory/${id}`, {
       method: "PUT",
       body: JSON.stringify(item),
@@ -215,7 +297,7 @@ export const inventoryAPI = {
   },
 
   delete: (id: number) => {
-    const token = getAuthToken();
+    const token = getTokenFromCookies();
     return fetchAPI<void>(`/inventory/${id}`, {
       method: "DELETE",
       headers: {
@@ -255,19 +337,13 @@ export interface Order {
   id: number;
   order_number: string;
   timestamp: string;
-  status: "waiting" | "cooking" | "completed" | "canceled";
-  order_type: "Dine In" | "GoFood" | "Grab" | "Shopee" | "Other";
+  order_type: string;
   total_amount: number;
-  items: OrderItem[];
-}
-
-export interface OrderCreate {
-  order_number: string;
-  timestamp: string;
-  status: "waiting" | "cooking" | "completed" | "canceled";
-  order_type: "Dine In" | "GoFood" | "Grab" | "Shopee" | "Other";
-  total_amount: number;
-  items: OrderItemCreate[];
+  payment_status: string;
+  paid_at: string;
+  payment_method: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface InventoryItem {

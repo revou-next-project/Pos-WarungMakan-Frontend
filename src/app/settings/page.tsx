@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plus, Pencil, Trash2, User, Store, Lock } from "lucide-react";
@@ -12,53 +12,47 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Navside from "@/components/navside/navside";
 
-interface UserData {
-  id: number;
-  name: string;
-  email: string;
-  role: "admin" | "cashier";
-  lastLogin?: string;
-}
+import { UserData, StoreSettings } from "@/models/UserData";
 
-interface StoreSettings {
-  name: string;
-  address: string;
-  phone: string;
-  taxRate: number;
-  currency: string;
-  logo?: string;
-}
+import { usersAPI } from "@/lib/api";
+import { formatDate } from "@/lib/utils";
 
 export default function SettingsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("users");
 
   // Users state
-  const [users, setUsers] = useState<UserData[]>([
-    {
-      id: 1,
-      name: "Admin User",
-      email: "admin@example.com",
-      role: "admin",
-      lastLogin: "2023-06-15 08:30",
-    },
-    {
-      id: 2,
-      name: "Cashier 1",
-      email: "cashier1@example.com",
-      role: "cashier",
-      lastLogin: "2023-06-14 17:45",
-    },
-    {
-      id: 3,
-      name: "Cashier 2",
-      email: "cashier2@example.com",
-      role: "cashier",
-      lastLogin: "2023-06-13 09:15",
-    },
-  ]);
+  // const [users, setUsers] = useState<UserData[]>([
+  //   {
+  //     id: 1,
+  //     name: "Admin User",
+  //     email: "admin@example.com",
+  //     role: "admin",
+  //     last_login: "2023-06-15 08:30",
+  //   },
+  //   {
+  //     id: 2,
+  //     name: "Cashier 1",
+  //     email: "cashier1@example.com",
+  //     role: "cashier",
+  //     last_login: "2023-06-14 17:45",
+  //   },
+  //   {
+  //     id: 3,
+  //     name: "Cashier 2",
+  //     email: "cashier2@example.com",
+  //     role: "cashier",
+  //     last_login: "2023-06-13 09:15",
+  //   },
+  // ]);
+  const [users, setUsers] = useState<UserData[]>([]);
+
+  useEffect(() => {
+    usersAPI.getAll().then((data) => {
+      setUsers(data);
+    });
+  }, []);
 
   // Store settings state
   const [storeSettings, setStoreSettings] = useState<StoreSettings>({
@@ -76,8 +70,9 @@ export default function SettingsPage() {
   const [isDeleteUserDialogOpen, setIsDeleteUserDialogOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
   const [newUser, setNewUser] = useState<Partial<UserData>>({
-    name: "",
+    username: "",
     email: "",
+    password: "",
     role: "cashier",
   });
 
@@ -87,10 +82,16 @@ export default function SettingsPage() {
     const userToAdd = { ...newUser, id } as UserData;
     setUsers([...users, userToAdd]);
     setNewUser({
-      name: "",
+      username: "",
       email: "",
+      password: "",
       role: "cashier",
     });
+    try {
+      usersAPI.createUser(userToAdd);
+    } catch (error) {
+      console.error("Error creating user:", error);
+    }
     setIsAddUserDialogOpen(false);
   };
 
@@ -98,6 +99,11 @@ export default function SettingsPage() {
     if (!currentUser) return;
     const updatedUsers = users.map((u) => (u.id === currentUser.id ? currentUser : u));
     setUsers(updatedUsers);
+    try {
+      usersAPI.updateUser(currentUser.id, currentUser);
+    } catch (error) {
+      console.error("Error updating user:", error);
+    }
     setIsEditUserDialogOpen(false);
     setCurrentUser(null);
   };
@@ -106,6 +112,11 @@ export default function SettingsPage() {
     if (!currentUser) return;
     const filteredUsers = users.filter((u) => u.id !== currentUser.id);
     setUsers(filteredUsers);
+    try {
+      usersAPI.deleteUser(currentUser.id);
+    } catch (error) {
+      console.error("Error deleting user:", error);
+    }
     setIsDeleteUserDialogOpen(false);
     setCurrentUser(null);
   };
@@ -120,25 +131,49 @@ export default function SettingsPage() {
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar Navigation */}
-      <Navside />
+      <div className="w-64 border-r bg-card p-4 flex flex-col">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-primary">Food POS</h2>
+          <p className="text-sm text-muted-foreground">Restaurant Management</p>
+        </div>
+
+        <Button variant="ghost" className="w-full justify-start mb-4" size="lg" onClick={() => router.push("/dashboard")}>
+          <ArrowLeft className="mr-2 h-5 w-5" />
+          Back to Dashboard
+        </Button>
+      </div>
+      {/* <div className="mb-6 flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push("/dashboard")}
+            className="h-8 w-8"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <h1 className="text-2xl font-bold">Settings</h1>
+        </div> */}
+
+      {/* Main Content Area */}
+
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="border-b bg-card p-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold">Settings</h1>
-          </div>
-        </header>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          {/* Header */}
+          <header className="border-b bg-card p-4">
+            <div className="flex items-center justify-between">
+              <TabsList className="mb-6">
+                <TabsTrigger value="users" className="flex items-center gap-2">
+                  <User className="h-4 w-4" /> User Management
+                </TabsTrigger>
+                <TabsTrigger value="store" className="flex items-center gap-2">
+                  <Store className="h-4 w-4" /> Store Settings
+                </TabsTrigger>
+              </TabsList>
+            </div>
+          </header>
 
-        <main className="flex-1 overflow-auto p-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mb-6">
-              <TabsTrigger value="users" className="flex items-center gap-2">
-                <User className="h-4 w-4" /> User Management
-              </TabsTrigger>
-              <TabsTrigger value="store" className="flex items-center gap-2">
-                <Store className="h-4 w-4" /> Store Settings
-              </TabsTrigger>
-            </TabsList>
-
+          {/* Content */}
+          <main className="flex-1 overflow-auto p-6">
             <TabsContent value="users">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -161,12 +196,12 @@ export default function SettingsPage() {
                     <TableBody>
                       {users.map((user) => (
                         <TableRow key={user.id}>
-                          <TableCell className="font-medium">{user.name}</TableCell>
+                          <TableCell className="font-medium">{user.username}</TableCell>
                           <TableCell>{user.email}</TableCell>
                           <TableCell>
                             <Badge variant={user.role === "admin" ? "default" : "secondary"}>{user.role === "admin" ? "Admin" : "Cashier"}</Badge>
                           </TableCell>
-                          <TableCell>{user.lastLogin || "Never"}</TableCell>
+                          <TableCell>{user.last_login ? formatDate(user.last_login) : "Never"}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button
@@ -302,28 +337,90 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
             </TabsContent>
-          </Tabs>
-        </main>
+          </main>
+        </Tabs>
+      </div>
 
-        {/* Add User Dialog */}
-        <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New User</DialogTitle>
-            </DialogHeader>
+      {/* Add User Dialog */}
+      <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New User</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input id="name" value={newUser.username} onChange={(e) => setNewUser({ ...newUser, username: e.target.value })} placeholder="Enter full name" />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} placeholder="Enter email address" />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="password">password</Label>
+              <Input id="password" type="password" value={newUser.password} onChange={(e) => setNewUser({ ...newUser, password: e.target.value })} placeholder="Enter password" />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="role">Role</Label>
+              <Select value={newUser.role} onValueChange={(value: "admin" | "cashier") => setNewUser({ ...newUser, role: value })}>
+                <SelectTrigger id="role">
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="cashier">Cashier</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddUserDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddUser}>Add User</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+          </DialogHeader>
+          {currentUser && (
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" value={newUser.name} onChange={(e) => setNewUser({ ...newUser, name: e.target.value })} placeholder="Enter full name" />
+                <Label htmlFor="edit-name">Full Name</Label>
+                <Input
+                  id="edit-name"
+                  value={currentUser.username}
+                  onChange={(e) =>
+                    setCurrentUser({
+                      ...currentUser,
+                      username: e.target.value,
+                    })
+                  }
+                />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={newUser.email} onChange={(e) => setNewUser({ ...newUser, email: e.target.value })} placeholder="Enter email address" />
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  type="email"
+                  value={currentUser.email}
+                  onChange={(e) =>
+                    setCurrentUser({
+                      ...currentUser,
+                      email: e.target.value,
+                    })
+                  }
+                />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="role">Role</Label>
-                <Select value={newUser.role} onValueChange={(value: "admin" | "cashier") => setNewUser({ ...newUser, role: value })}>
-                  <SelectTrigger id="role">
+                <Label htmlFor="edit-role">Role</Label>
+                <Select value={currentUser.role} onValueChange={(value: "admin" | "cashier") => setCurrentUser({ ...currentUser, role: value })}>
+                  <SelectTrigger id="edit-role">
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
@@ -333,93 +430,35 @@ export default function SettingsPage() {
                 </Select>
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddUserDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddUser}>Add User</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditUserDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditUser}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        {/* Edit User Dialog */}
-        <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit User</DialogTitle>
-            </DialogHeader>
-            {currentUser && (
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-name">Full Name</Label>
-                  <Input
-                    id="edit-name"
-                    value={currentUser.name}
-                    onChange={(e) =>
-                      setCurrentUser({
-                        ...currentUser,
-                        name: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-email">Email</Label>
-                  <Input
-                    id="edit-email"
-                    type="email"
-                    value={currentUser.email}
-                    onChange={(e) =>
-                      setCurrentUser({
-                        ...currentUser,
-                        email: e.target.value,
-                      })
-                    }
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-role">Role</Label>
-                  <Select value={currentUser.role} onValueChange={(value: "admin" | "cashier") => setCurrentUser({ ...currentUser, role: value })}>
-                    <SelectTrigger id="edit-role">
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="cashier">Cashier</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditUserDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleEditUser}>Save Changes</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Delete User Dialog */}
-        <Dialog open={isDeleteUserDialogOpen} onOpenChange={setIsDeleteUserDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete User</DialogTitle>
-            </DialogHeader>
-            <p>
-              Are you sure you want to delete <span className="font-semibold">{currentUser?.name || "this user"}</span>? This action cannot be undone.
-            </p>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDeleteUserDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button variant="destructive" onClick={handleDeleteUser}>
-                Delete
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+      {/* Delete User Dialog */}
+      <Dialog open={isDeleteUserDialogOpen} onOpenChange={setIsDeleteUserDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+          </DialogHeader>
+          <p>
+            Are you sure you want to delete <span className="font-semibold">{currentUser?.username || "this user"}</span>? This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteUserDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteUser}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

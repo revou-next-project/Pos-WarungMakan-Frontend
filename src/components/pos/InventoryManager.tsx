@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface InventoryItem {
+  id: number;
   name: string;
   current_stock: number;
   unit: string;
@@ -22,6 +23,7 @@ interface InventoryItem {
 }
 
 interface InventoryItemUpdate {
+  id: number;
   name: string;
   current_stock: number;
   unit: string;
@@ -141,6 +143,7 @@ export default function InventoryManager() {
   };
 
   const inventoryToInventoryUpdate = (inventory: InventoryItem): InventoryItemUpdate => ({
+    id: inventory.id,
     name: inventory.name,
     current_stock: inventory.current_stock,
     unit: inventory.unit,
@@ -176,118 +179,122 @@ export default function InventoryManager() {
   };
 
   return (
-    <div className="bg-background p-6 h-full">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Inventory Management</h1>
-        <div className="flex gap-4">
-          <div className="relative w-64">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search inventory..." className="pl-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <header className="border-b bg-card p-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold">Inventory Management</h1>
+          <div className="flex gap-4">
+            <div className="relative w-64">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search inventory..." className="pl-8" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            </div>
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" /> Add Item
+            </Button>
           </div>
-          <Button onClick={() => setIsAddDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Add Item
-          </Button>
         </div>
-      </div>
+      </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Items</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{inventoryItems.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Low Stock Items</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-500">{inventoryItems.filter((item) => item.current_stock < item.min_threshold).length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Categories</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{new Set(inventoryItems.map((item) => item.category)).size}</div>
-          </CardContent>
-        </Card>
-      </div>
+      <main className="flex-1 overflow-auto p-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Total Items</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{inventoryItems.length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Low Stock Items</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-amber-500">{inventoryItems.filter((item) => item.current_stock < item.min_threshold).length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Categories</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{new Set(inventoryItems.map((item) => item.category)).size}</div>
+            </CardContent>
+          </Card>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Inventory Items</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Current Stock</TableHead>
-                <TableHead>Unit</TableHead>
-                <TableHead>Min. Threshold</TableHead>
-                <TableHead>Last Updated</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredItems.length > 0 ? (
-                filteredItems.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell>{item.category}</TableCell>
-                    <TableCell>
-                      {item.current_stock} {item.unit}
-                    </TableCell>
-                    <TableCell>{item.unit}</TableCell>
-                    <TableCell>
-                      {item.min_threshold} {item.unit}
-                    </TableCell>
-                    <TableCell>{item.last_updated}</TableCell>
-                    <TableCell>
-                      {item.current_stock < item.min_threshold ? (
-                        <Badge variant="destructive" className="flex items-center gap-1">
-                          <AlertTriangle className="h-3 w-3" /> Low Stock
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary">In Stock</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedItem(item);
-                            setIsEditDialogOpen(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDeleteItem(item.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Inventory Items</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Current Stock</TableHead>
+                  <TableHead>Unit</TableHead>
+                  <TableHead>Min. Threshold</TableHead>
+                  <TableHead>Last Updated</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredItems.length > 0 ? (
+                  filteredItems.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">{item.name}</TableCell>
+                      <TableCell>{item.category}</TableCell>
+                      <TableCell>
+                        {item.current_stock} {item.unit}
+                      </TableCell>
+                      <TableCell>{item.unit}</TableCell>
+                      <TableCell>
+                        {item.min_threshold} {item.unit}
+                      </TableCell>
+                      <TableCell>{item.last_updated}</TableCell>
+                      <TableCell>
+                        {item.current_stock < item.min_threshold ? (
+                          <Badge variant="destructive" className="flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" /> Low Stock
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">In Stock</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedItem(item);
+                              setIsEditDialogOpen(true);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteItem(item.id)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-4">
+                      No inventory items found
                     </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-4">
-                    No inventory items found
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </main>
 
       {/* Add Item Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -323,11 +330,11 @@ export default function InventoryManager() {
               <Label htmlFor="stock" className="text-right">
                 Current Stock
               </Label>
-              <Input id="stock" value={newInventory.current_stock} onChange={(e) => setNewInventory({ ...newInventory, current_stock: e.target.value })} type="number" className="col-span-3" />
+              <Input id="stock" value={newInventory.current_stock} onChange={(e) => setNewInventory({ ...newInventory, current_stock: Number(e.target.value) })} type="number" className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Unit</Label>
-              <Select htmlFor="unit" value={newInventory.unit} onValueChange={(value) => setNewInventory({ ...newInventory, unit: value })}>
+              <Select value={newInventory.unit} onValueChange={(value) => setNewInventory({ ...newInventory, unit: value })}>
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Select unit" />
                 </SelectTrigger>
@@ -344,7 +351,7 @@ export default function InventoryManager() {
               <Label htmlFor="threshold" className="text-right">
                 Min. Threshold
               </Label>
-              <Input id="threshold" value={newInventory.min_threshold} onChange={(e) => setNewInventory({ ...newInventory, min_threshold: e.target.value })} type="number" className="col-span-3" />
+              <Input id="threshold" value={newInventory.min_threshold} onChange={(e) => setNewInventory({ ...newInventory, min_threshold: Number(e.target.value) })} type="number" className="col-span-3" />
             </div>
           </div>
           <DialogFooter>
@@ -370,13 +377,13 @@ export default function InventoryManager() {
                 <Label htmlFor="edit-name" className="text-right">
                   Name
                 </Label>
-                <Input id="edit-name" Value={selectedItem.name} onChange={(e) => setSelectedItem({ ...selectedItem, name: e.target.value })} className="col-span-3" />
+                <Input id="edit-name" value={selectedItem.name} onChange={(e) => setSelectedItem({ ...selectedItem, name: e.target.value })} className="col-span-3" />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-category" className="text-right">
                   Category
                 </Label>
-                <Select id="edit-category" value={selectedItem.category} onValueChange={(value) => setSelectedItem({ ...selectedItem, category: value })}>
+                <Select value={selectedItem.category} onValueChange={(value) => setSelectedItem({ ...selectedItem, category: value })}>
                   <SelectTrigger className="col-span-3">
                     <SelectValue />
                   </SelectTrigger>
@@ -393,13 +400,13 @@ export default function InventoryManager() {
                 <Label htmlFor="edit-stock" className="text-right">
                   Current Stock
                 </Label>
-                <Input id="edit-stock" Value={selectedItem.current_stock} onChange={(e) => setSelectedItem({ ...selectedItem, current_stock: e.target.value })} className="col-span-3" />
+                <Input id="edit-stock" value={selectedItem.current_stock} onChange={(e) => setSelectedItem({ ...selectedItem, current_stock: Number(e.target.value) })} className="col-span-3" />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-category" className="text-right">
                   Unit
                 </Label>
-                <Select id="edit-unit" value={selectedItem.unit} onValueChange={(value) => setSelectedItem({ ...selectedItem, unit: value })}>
+                <Select value={selectedItem.unit} onValueChange={(value) => setSelectedItem({ ...selectedItem, unit: value })}>
                   <SelectTrigger className="col-span-3">
                     <SelectValue />
                   </SelectTrigger>
@@ -416,7 +423,7 @@ export default function InventoryManager() {
                 <Label htmlFor="edit-threshold" className="text-right">
                   Min. Threshold
                 </Label>
-                <Input id="edit-threshold" type="number" Value={selectedItem.min_threshold} onChange={(e) => setSelectedItem({ ...selectedItem, min_threshold: e.target.value })} className="col-span-3" />
+                <Input id="edit-threshold" type="number" value={selectedItem.min_threshold} onChange={(e) => setSelectedItem({ ...selectedItem, min_threshold: Number(e.target.value) })} className="col-span-3" />
               </div>
             </div>
           )}
