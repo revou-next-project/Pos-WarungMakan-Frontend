@@ -6,24 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  BarChart3,
-  ChefHat,
-  ClipboardList,
-  DollarSign,
-  FileText,
-  LogOut,
-  Package,
-  Receipt,
-  Settings,
-  ShoppingCart,
-  Users,
-  Wallet,
-} from "lucide-react";
+import { BarChart3, ChefHat, ClipboardList, DollarSign, FileText, LogOut, Package, Receipt, Settings, ShoppingCart, Users, Wallet } from "lucide-react";
 import SalesInterface from "@/components/pos/SalesInterface";
 import { useRole } from "@/contexts/roleContext";
-import moment from 'moment';
-import { ordersAPI } from '@/lib/api';
+import moment from "moment";
+import { ordersAPI } from "@/lib/api";
 import { getCurrentUser, getCurrentUserId } from "@/lib/utils";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 
@@ -46,7 +33,6 @@ export default function DashboardPage() {
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
   const router = useRouter();
-  
 
   const handleLogout = () => {
     document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
@@ -55,9 +41,8 @@ export default function DashboardPage() {
     router.push("/login");
   };
 
-
   const role = useRole();
-  const formattedDate = moment().format('YYYY-MM-DD');
+  const formattedDate = moment().format("YYYY-MM-DD");
 
   useEffect(() => {
     const current = getCurrentUser();
@@ -69,12 +54,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const todayDate = moment().format("YYYY-MM-DD");
-  
+
     ordersAPI.getAll("paid").then((response) => {
-      const ordersToday = response.data.filter((order) =>
-        moment(order.paid_at).isSame(todayDate, "day")
-      );
-  
+      const ordersToday = response.data.filter((order) => moment(order.paid_at).isSame(todayDate, "day"));
+
       setTodaysOrders(ordersToday);
       setTotalOrders(ordersToday.length); // total paid hari ini
     });
@@ -99,7 +82,7 @@ export default function DashboardPage() {
                 Today's Orders: {todaysOrders.length}
               </Button>
               <Button variant="outline" size="sm">
-              Date: {moment().format('dddd, MMMM D, YYYY')}
+                Date: {moment().format("dddd, MMMM D, YYYY")}
               </Button>
             </div>
           </div>
@@ -114,7 +97,7 @@ export default function DashboardPage() {
                   <CardTitle>Sales Interface</CardTitle>
                 </CardHeader>
                 <CardContent className="px-0 pb-0">
-                <SalesInterface userId={userId} />
+                  <SalesInterface userId={userId} />
                 </CardContent>
               </Card>
             </TabsContent>

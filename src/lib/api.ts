@@ -9,10 +9,7 @@ import { getTokenFromCookies } from "./utils";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URLL || "https://api-pwk.ahmadcloud.my.id";
 
 // Generic fetch function with error handling
-async function fetchAPI<T>(
-  endpoint: string,
-  options: RequestInit = {},
-): Promise<T> {
+async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
   const headers = {
@@ -29,9 +26,7 @@ async function fetchAPI<T>(
     let errorMessage;
     try {
       const errorData = await response.json();
-      errorMessage = Array.isArray(errorData.detail)
-        ? errorData.detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ')
-        : errorData.detail || JSON.stringify(errorData);
+      errorMessage = Array.isArray(errorData.detail) ? errorData.detail.map((e: any) => e.msg || JSON.stringify(e)).join(", ") : errorData.detail || JSON.stringify(errorData);
     } catch (e) {
       errorMessage = `API error: ${response.status}`;
     }
@@ -78,8 +73,8 @@ export const recipeAPI = {
         Authorization: `Bearer ${token}`,
       },
     });
-  }
-}
+  },
+};
 
 export const usersAPI = {
   getAll: () => {
@@ -114,17 +109,16 @@ export const usersAPI = {
         Authorization: `Bearer ${token}`,
       },
     });
-  }
+  },
 };
-
 
 // Auth API (changed to use username instead of email)
 export const authAPI = {
   login: async (username: string, password: string) => {
     const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ username, password }),
     });
@@ -200,7 +194,6 @@ export const productsAPI = {
   },
 };
 
-
 // Orders API
 export const ordersAPI = {
   getAll: (status?: string) => {
@@ -213,15 +206,7 @@ export const ordersAPI = {
     });
   },
 
-  getAllPaginated: ({
-    payment_status = "paid",
-    limit = 20,
-    offset = 0,
-  }: {
-    payment_status?: string;
-    limit?: number;
-    offset?: number;
-  }) => {
+  getAllPaginated: ({ payment_status = "paid", limit = 20, offset = 0 }: { payment_status?: string; limit?: number; offset?: number }) => {
     const token = getTokenFromCookies();
     const query = `?payment_status=${payment_status}&limit=${limit}&offset=${offset}`;
     return fetchAPI<{ data: Order[] }>(`/orders${query}`, {
@@ -258,7 +243,7 @@ export const ordersAPI = {
       },
       body: JSON.stringify(payload),
     });
-  }
+  },
 };
 
 // Inventory API
