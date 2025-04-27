@@ -1,6 +1,7 @@
 "use client";
 
-import { inventoryAPI, InventoryItemCreate } from "@/lib/api";
+import { inventoryAPI } from "@/lib/api";
+import { InventoryItemCreate } from "@/models/InventoryItems";
 import React, { useState, useEffect } from "react";
 import { Search, Plus, AlertTriangle, Edit, Trash2, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";

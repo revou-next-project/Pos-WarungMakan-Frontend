@@ -4,6 +4,7 @@
 
 import { UserData } from "@/models/UserData";
 import { RecipeData } from "@/models/RecipeData";
+import { InventoryItem, InventoryItemCreate} from "@/models/InventoryItems";
 import { getTokenFromCookies } from "./utils";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URLL || "https://api-pwk.ahmadcloud.my.id";
@@ -346,14 +347,4 @@ export interface Order {
   updated_at: string;
 }
 
-export interface InventoryItem {
-  id: number;
-  name: string;
-  current_stock: number;
-  unit: string;
-  min_threshold: number;
-  last_updated: string;
-  category: string;
-}
 
-export type InventoryItemCreate = Omit<InventoryItem, "id" | "last_updated">;

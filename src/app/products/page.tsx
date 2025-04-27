@@ -49,12 +49,12 @@ export default function ProductsPage() {
     const loadProducts = async () => {
       try {
         // Retrieve the token from localStorage
-        const token = localStorage.getItem("token");
+        // const token = localStorage.getItem("token");
 
-        if (!token) {
-          console.error("Token not found in localStorage");
-          return;
-        }
+        // if (!token) {
+        //   console.error("Token not found in localStorage");
+        //   return;
+        // }
 
         // Call the API with the token in the Authorization header
         const apiProducts = await productsAPI.getAll();
