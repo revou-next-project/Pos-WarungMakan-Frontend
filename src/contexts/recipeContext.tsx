@@ -20,6 +20,8 @@ type RecipeContextType = {
     setToDeleteId: Dispatch<SetStateAction<number>>;
     isViewIngredientsDialogOpen: boolean;
     setIsViewIngredientsDialogOpen: Dispatch<SetStateAction<boolean>>;
+    isAddDialogOpen: boolean;
+    setIsAddDialogOpen: Dispatch<SetStateAction<boolean>>;
     
  };
 
@@ -40,13 +42,14 @@ export const RecipeProvider = ({ children }: { children: ReactNode }) => {
     const [toDeleteId, setToDeleteId] = useState<number>(0);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isViewIngredientsDialogOpen, setIsViewIngredientsDialogOpen] = useState(false);
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     
       return (
         <RecipeContext.Provider value={
             { 
               currentRecipe, setCurrentRecipe, isEditDialogOpen, setIsEditDialogOpen,
               toDeleteId, setToDeleteId, isDeleteDialogOpen, setIsDeleteDialogOpen, isViewIngredientsDialogOpen,
-              setIsViewIngredientsDialogOpen
+              setIsViewIngredientsDialogOpen, isAddDialogOpen, setIsAddDialogOpen
             }
             }>
           {children}

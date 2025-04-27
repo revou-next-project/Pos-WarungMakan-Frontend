@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Toaster } from "@/components/ui/toaster";
-import { productsAPI, ProductCreate } from "@/lib/api";
+import { productsAPI } from "@/lib/api";
+import { ProductCreate } from "@/models/ProductData";
 import Navside from "@/components/navside/navside";
 
 interface Product {
