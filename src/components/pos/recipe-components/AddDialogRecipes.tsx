@@ -26,6 +26,7 @@ const AddDialogRecipes: React.FC<AddDialogRecipesProps> = ({products, inventoryI
     const { isAddDialogOpen, setIsAddDialogOpen } = useRecipe();
 
     const uniqueCategories = useMemo(
+        
         () => Array.from(new Set(products.map((p) => p.category))),
         [products]
       );
