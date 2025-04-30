@@ -4,7 +4,9 @@
 
 import { UserData } from "@/models/UserData";
 import { RecipeData } from "@/models/RecipeData";
+import { InventoryItem, InventoryItemCreate} from "@/models/InventoryItems";
 import { getTokenFromCookies } from "./utils";
+import { Product, ProductCreate } from "@/models/ProductData";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URLL || "https://api-pwk.ahmadcloud.my.id";
 
@@ -65,9 +67,9 @@ export const recipeAPI = {
       body: JSON.stringify(recipe),
     });
   },
-  deleteRecipe: (recipt_id: number) => {
+  deleteRecipe: (recipe_id: number) => {
     const token = getTokenFromCookies();
-    return fetchAPI<void>(`/recipes/${recipt_id}`, {
+    return fetchAPI<void>(`/recipes/${recipe_id}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -308,17 +310,17 @@ export const inventoryAPI = {
 };
 
 // Type definitions
-export interface Product {
-  id: number;
-  name: string;
-  price: number;
-  category: string;
-  unit: string;
-  is_package: boolean;
-  image?: string;
-}
+// export interface Product {
+//   id: number;
+//   name: string;
+//   price: number;
+//   category: string;
+//   unit: string;
+//   is_package: boolean;
+//   image?: string;
+// }
 
-export type ProductCreate = Omit<Product, "id">;
+// export type ProductCreate = Omit<Product, "id">;
 
 export interface OrderItem {
   id: number;
@@ -346,14 +348,4 @@ export interface Order {
   updated_at: string;
 }
 
-export interface InventoryItem {
-  id: number;
-  name: string;
-  current_stock: number;
-  unit: string;
-  min_threshold: number;
-  last_updated: string;
-  category: string;
-}
 
-export type InventoryItemCreate = Omit<InventoryItem, "id" | "last_updated">;

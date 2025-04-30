@@ -32,17 +32,7 @@ export default function DashboardPage() {
   const [totalOrders, setTotalOrders] = useState<number>(0);
   const [user, setUser] = useState<{ name: string; role: string } | null>(null);
   const [userId, setUserId] = useState<number | null>(null);
-  const router = useRouter();
-
-  const handleLogout = () => {
-    document.cookie = "token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    document.cookie = "role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-
-    router.push("/login");
-  };
-
-  const role = useRole();
-  const formattedDate = moment().format("YYYY-MM-DD");
+  // const router = useRouter();
 
   useEffect(() => {
     const current = getCurrentUser();

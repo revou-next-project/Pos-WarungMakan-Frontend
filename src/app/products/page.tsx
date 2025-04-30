@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Toaster } from "@/components/ui/toaster";
-import { productsAPI, ProductCreate } from "@/lib/api";
+import { productsAPI } from "@/lib/api";
+import { ProductCreate } from "@/models/ProductData";
 import Navside from "@/components/navside/navside";
 
 interface Product {
@@ -49,12 +50,12 @@ export default function ProductsPage() {
     const loadProducts = async () => {
       try {
         // Retrieve the token from localStorage
-        const token = localStorage.getItem("token");
+        // const token = localStorage.getItem("token");
 
-        if (!token) {
-          console.error("Token not found in localStorage");
-          return;
-        }
+        // if (!token) {
+        //   console.error("Token not found in localStorage");
+        //   return;
+        // }
 
         // Call the API with the token in the Authorization header
         const apiProducts = await productsAPI.getAll();
