@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-const secretKey = process.env.NEXT_PUBLIC_JWT_SECRET;
+const secretKey = process.env.NEXT_PUBLIC_JWT_SECRETT;
 if (!secretKey) throw new Error("Missing NEXT_PUBLIC_JWT_SECRET");
 
 const encodedSecret = new TextEncoder().encode(secretKey);

@@ -159,19 +159,30 @@ export default function ReportsPage() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode={calendarMode}
-                    selected={calendarMode === "range" ? dateRange : calendarMode === "multiple" ? multipleDates : singleDate}
-                    onSelect={(date: DateRange | Date[] | Date | undefined) => {
-                      if (calendarMode === "range") {
-                        setDateRange(date as DateRange);
-                      } else if (calendarMode === "multiple") {
-                        setMultipleDates(date as Date[]);
-                      } else {
-                        setSingleDate(date as Date);
-                      }
-                    }}
-                  />
+                {calendarMode === "range" && (
+                <Calendar
+                  mode="range"
+                  selected={dateRange}
+                  onSelect={(date) => setDateRange(date as DateRange)}
+                  required
+                />
+              )}
+
+              {calendarMode === "multiple" && (
+                <Calendar
+                  mode="multiple"
+                  selected={multipleDates}
+                  onSelect={(date) => setMultipleDates(date as Date[])}
+                />
+              )}
+
+              {calendarMode === "single" && (
+                <Calendar
+                  mode="single"
+                  selected={singleDate}
+                  onSelect={(date) => setSingleDate(date as Date)}
+                />
+              )}
                 </PopoverContent>
               </Popover>
 
