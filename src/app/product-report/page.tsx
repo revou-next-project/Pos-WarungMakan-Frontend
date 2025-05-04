@@ -4,7 +4,15 @@ import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { FileText, BarChart3, Calendar, Filter } from "lucide-react";
+import { FileText, BarChart3, Calendar, Filter, X } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { DateRange } from "react-day-picker";
+import DatePickerWithRange from "@/components/ui/date-picker-with-range";
+import { format, isWithinInterval, parseISO } from "date-fns";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 import { productsAPI, ordersAPI } from "@/lib/api";
 import { Product, Order, OrderItem } from "@/lib/types";
@@ -12,14 +20,56 @@ import PopularProducts from "@/components/product-report/PopularProducts";
 import CategoryBreakdown from "@/components/product-report/CategoryBreakdown";
 import TimeBasedAnalysis from "@/components/product-report/TimeBasedAnalysis";
 import PriceRangeAnalysis from "@/components/product-report/PriceRangeAnalysis";
+import { OrderDetail } from "@/lib/types";
 
 export default function ProductReportPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [filteredOrderItems, setFilteredOrderItems] = useState<OrderItem[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
+  const [isDateFilterActive, setIsDateFilterActive] = useState<boolean>(false);
 
+  // Filter data based on date range
+  useEffect(() => {
+    if (dateRange?.from && dateRange?.to) {
+      setIsDateFilterActive(true);
+
+      // Filter orders by date range
+      const filtered = orders.filter((order) => {
+        const orderDate = parseISO(order.created_at);
+        return (
+          dateRange.from &&
+          dateRange.to &&
+          isWithinInterval(orderDate, {
+            start: dateRange.from,
+            end: dateRange.to,
+          })
+        );
+      });
+      setFilteredOrders(filtered);
+
+      // Filter order items that belong to filtered orders
+      const orderIds = new Set(filtered.map((order) => order.id));
+      const filteredItems = orderItems.filter((item) => {
+        // Find the order this item belongs to and check if it's in our filtered orders
+        const orderProduct = products.find((p) => p.id === item.product_id);
+        return orderIds.has(item.id); // This assumes item.id is the order id, adjust if needed
+      });
+      setFilteredOrderItems(filteredItems);
+    } else {
+      setIsDateFilterActive(false);
+      setFilteredOrders(orders);
+      setFilteredOrderItems(orderItems);
+    }
+  }, [dateRange, orders, orderItems, products]);
+
+  const [favoritesData, setFavoritesData] = useState<any>(null);
+
+  // Fetch data when date range changes
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -27,11 +77,36 @@ export default function ProductReportPage() {
 
         // Fetch products
         const productsData = await productsAPI.getAll();
-        setProducts(productsData);
-
+        setProducts(
+          productsData.map((p) => ({
+            ...p,
+            isPackage: p.is_package ?? false,
+          }))
+        );
+        
         // Fetch orders
         const ordersResponse = await ordersAPI.getAll("paid");
         setOrders(ordersResponse.data);
+
+        // Fetch favorites data for popular products and category breakdown
+        const params: {
+          category?: string;
+          start_date?: string;
+          end_date?: string;
+        } = {};
+        if (dateRange?.from) {
+          params.start_date = format(dateRange.from, "yyyy-MM-dd");
+        }
+        if (dateRange?.to) {
+          params.end_date = format(dateRange.to, "yyyy-MM-dd");
+        }
+
+        try {
+          const favorites = await ordersAPI.getFavorites(params);
+          setFavoritesData(favorites);
+        } catch (favError) {
+          console.error("Error fetching favorites:", favError);
+        }
 
         // For each order, fetch order details to get items
         const orderDetailsPromises = ordersResponse.data.map((order) =>
@@ -44,12 +119,17 @@ export default function ProductReportPage() {
         // Extract order items from successful responses
         const allOrderItems: OrderItem[] = [];
         orderDetailsResults.forEach((result) => {
-          if (result.status === "fulfilled" && result.value.items) {
-            allOrderItems.push(...result.value.items);
+          if (result.status === "fulfilled") {
+            const detail = result.value as OrderDetail;
+            if (detail.items) {
+              allOrderItems.push(...detail.items);
+            }
           }
         });
 
         setOrderItems(allOrderItems);
+        setFilteredOrderItems(allOrderItems);
+        setFilteredOrders(ordersResponse.data);
         setLoading(false);
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -59,7 +139,7 @@ export default function ProductReportPage() {
     };
 
     fetchData();
-  }, []);
+  }, [dateRange]);
 
   return (
     <div className="flex h-screen bg-background">
@@ -79,10 +159,39 @@ export default function ProductReportPage() {
                 <FileText className="mr-2 h-4 w-4" />
                 Export Report
               </Button>
-              <Button variant="outline" size="sm">
-                <Calendar className="mr-2 h-4 w-4" />
-                Filter by Date
-              </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={isDateFilterActive ? "default" : "outline"}
+                    size="sm"
+                  >
+                    <Calendar className="mr-2 h-4 w-4" />
+                    {isDateFilterActive ? (
+                      <span>
+                        {dateRange?.from ? format(dateRange.from, "PPP") : ""} -{" "}
+                        {dateRange?.to ? format(dateRange.to, "PPP") : ""}
+                      </span>
+                    ) : (
+                      <span>Filter by Date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <DatePickerWithRange
+                    date={dateRange}
+                    setDate={setDateRange}
+                  />
+                </PopoverContent>
+              </Popover>
+              {isDateFilterActive && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setDateRange(undefined)}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
         </header>
@@ -106,7 +215,10 @@ export default function ProductReportPage() {
                 <CardContent>
                   <PopularProducts
                     products={products}
-                    orderItems={orderItems}
+                    orderItems={
+                      isDateFilterActive ? filteredOrderItems : orderItems
+                    }
+                    favoritesData={favoritesData}
                   />
                 </CardContent>
               </Card>
@@ -118,7 +230,10 @@ export default function ProductReportPage() {
                 <CardContent>
                   <CategoryBreakdown
                     products={products}
-                    orderItems={orderItems}
+                    orderItems={
+                      isDateFilterActive ? filteredOrderItems : orderItems
+                    }
+                    favoritesData={favoritesData}
                   />
                 </CardContent>
               </Card>
@@ -128,7 +243,12 @@ export default function ProductReportPage() {
                   <CardTitle>Time-Based Analysis</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <TimeBasedAnalysis orders={orders} orderItems={orderItems} />
+                  <TimeBasedAnalysis
+                    orders={isDateFilterActive ? filteredOrders : orders}
+                    orderItems={
+                      isDateFilterActive ? filteredOrderItems : orderItems
+                    }
+                  />
                 </CardContent>
               </Card>
 
@@ -139,7 +259,9 @@ export default function ProductReportPage() {
                 <CardContent>
                   <PriceRangeAnalysis
                     products={products}
-                    orderItems={orderItems}
+                    orderItems={
+                      isDateFilterActive ? filteredOrderItems : orderItems
+                    }
                   />
                 </CardContent>
               </Card>
