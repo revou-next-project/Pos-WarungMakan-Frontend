@@ -9,7 +9,7 @@ export interface CashBalanceItem {
     date: string
     type: string
     category: string
-    description: string
+    descriptions: string
     amount: number
     created_at: string
 }
@@ -24,7 +24,7 @@ export interface expenseItem {
     date: string
     type: string
     category: string
-    description: string
+    descriptions: string
     amount: number
 }
    

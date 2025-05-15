@@ -51,7 +51,7 @@ type Transaction = {
   date: string
   type: "income" | "expense"
   category: string
-  description: string
+  descriptions: string
   amount: number
 }
 
@@ -107,7 +107,7 @@ export default function CashBalancePage() {
             date:        o.created_at ?? o.date,   // prefer created_at but fallback
             type:        "income" as const,
             category:    o.category,
-            description: o.description,
+            descriptions: o.descriptions,
             amount:      o.amount,
           })),
           // map expenses
@@ -116,7 +116,7 @@ export default function CashBalancePage() {
             date:        e.date,                        // your expense already has `.date`
             type:        "expense" as const,
             category:    e.category,
-            description: e.description,
+            descriptions: e.descriptions,
             amount:      e.amount,
           })),
         ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -309,7 +309,7 @@ export default function CashBalancePage() {
                             </span>
                           </TableCell>
                           <TableCell>{tx.category}</TableCell>
-                          <TableCell>{tx.description}</TableCell>
+                          <TableCell>{tx.descriptions}</TableCell>
                           <TableCell className="text-right">
                             <span className={tx.type === "income" ? "text-green-600" : "text-red-600"}>
                               {formatCurrency(tx.amount)}
