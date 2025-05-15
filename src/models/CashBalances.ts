@@ -1,0 +1,31 @@
+import { Order } from "@/lib/types"
+export interface CashBalance {
+    total: number
+    data: CashBalanceItem[]
+}
+
+export interface CashBalanceItem {
+    id: number
+    date: string
+    type: string
+    category: string
+    description: string
+    amount: number
+    created_at: string
+}
+
+export interface expense {
+    total: number
+    data: expenseItem[]
+}
+
+export interface expenseItem {
+    id: number
+    date: string
+    type: string
+    category: string
+    description: string
+    amount: number
+}
+   
+    

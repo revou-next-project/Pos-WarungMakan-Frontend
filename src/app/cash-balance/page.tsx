@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -40,47 +40,30 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, ArrowDownUp, Plus, Wallet } from "lucide-react";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 
-// Mock data for cash transactions
-const mockTransactions = [
-  {
-    id: 1,
-    date: "2023-05-01",
-    type: "income",
-    category: "Sales",
-    description: "Daily sales",
-    amount: 1500000,
-  },
-  {
-    id: 2,
-    date: "2023-05-02",
-    type: "expense",
-    category: "Ingredients",
-    description: "Vegetable purchase",
-    amount: 250000,
-  },
-  {
-    id: 3,
-    date: "2023-05-03",
-    type: "income",
-    category: "Sales",
-    description: "Daily sales",
-    amount: 1750000,
-  },
-  {
-    id: 4,
-    date: "2023-05-03",
-    type: "expense",
-    category: "Utilities",
-    description: "Electricity bill",
-    amount: 350000,
-  },
-];
+import { cashBalanceAPI } from "@/lib/api";
+import { CashBalance, expense } from "@/models/CashBalances";
+import { format } from "date-fns";
+import { formatDate } from "@/lib/utils";
+
+// Re-use the same item shape
+type Transaction = {
+  id: number
+  date: string
+  type: "income" | "expense"
+  category: string
+  description: string
+  amount: number
+}
+
+type TabValue = "all" | "income" | "expense";
+
 
 export default function CashBalancePage() {
   const router = useRouter();
-  const [transactions, setTransactions] = useState(mockTransactions);
+  // const [transactions, setTransactions] = useState(mockTransactions);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState<TabValue>("all");
   const [currentTransaction, setCurrentTransaction] = useState({
     id: 0,
     date: new Date().toISOString().split("T")[0],
@@ -89,27 +72,89 @@ export default function CashBalancePage() {
     description: "",
     amount: 0,
   });
+  const [cashBalances, setCashBalances] = useState<CashBalance>({ total: 0, data: [] });
+  const [expenses, setExpenses] = useState<expense>({ total: 0, data: [] });
+  const [page, setPage] = useState(1);
+
 
   // In a real implementation, this would fetch from the API
   useEffect(() => {
     // Fetch transactions from API
     // For now, we're using mock data
+    async function fetchAll() {
+      try {
+          // Fire both requests in parallel
+          const [ incRes, expRes ] = await Promise.all([
+            cashBalanceAPI.getAll({
+              start_date: "2025-05-01T00:00:00",
+              end_date:   "2025-06-01T00:00:00",
+              transaction_type: "sale",
+            }),
+            cashBalanceAPI.getAllExpenses({
+              start_date: "2025-05-01T00:00:00",
+              end_date:   "2025-06-01T00:00:00",
+            }),
+          ])
+
+          setCashBalances(incRes)
+          setExpenses(expRes)
+
+          // Merge _after_ both complete
+          const merged: Transaction[] = [
+          // map incomes
+          ...incRes.data.map(o => ({
+            id:          o.id,
+            date:        o.created_at ?? o.date,   // prefer created_at but fallback
+            type:        "income" as const,
+            category:    o.category,
+            description: o.description,
+            amount:      o.amount,
+          })),
+          // map expenses
+          ...expRes.data.map(e => ({
+            id:          e.id,
+            date:        e.date,                        // your expense already has `.date`
+            type:        "expense" as const,
+            category:    e.category,
+            description: e.description,
+            amount:      e.amount,
+          })),
+        ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          
+          setTransactions(merged)
+        }
+        catch (err: any) {
+          console.error(err)
+        }
+      }
+    fetchAll()
+    
+  }, [page, activeTab]);
+  
+  const totalIncome = cashBalances
+  ? cashBalances.data.reduce((sum, cash) => sum + cash.amount, 0)
+  : 0;
+  console.log(`total sales: ${totalIncome}`)
+
+  // handleActiveTab
+  const handleActiveTab = useCallback((tab: string) => {
+    // you could narrow `tab` to TabValue here if you like:
+    setActiveTab(tab as TabValue);
+    setPage(1);
   }, []);
 
-  // Filter transactions based on active tab
-  const filteredTransactions = transactions.filter((transaction) => {
-    if (activeTab === "all") return true;
-    return transaction.type === activeTab;
-  });
+  const filteredTransactions = useMemo(() => {
+    if (activeTab === "all") return transactions;
+    return transactions.filter(tx => tx.type === activeTab);
+  }, [transactions, activeTab]);
 
-  // Calculate total income, expenses, and balance
-  const totalIncome = transactions
-    .filter((t) => t.type === "income")
-    .reduce((sum, t) => sum + t.amount, 0);
+  const paginatedData = filteredTransactions.slice((page - 1) * 10, page * 10);
+  const totalPages = Math.ceil(filteredTransactions.length / 10);
 
-  const totalExpenses = transactions
-    .filter((t) => t.type === "expense")
-    .reduce((sum, t) => sum + t.amount, 0);
+  const totalExpenses = expenses
+  ? expenses.data.reduce((sum, expense) => sum + expense.amount, 0)
+  : 0;
+  console.log(`total expense: ${totalExpenses}`)
 
   const balance = totalIncome - totalExpenses;
 
@@ -226,7 +271,7 @@ export default function CashBalancePage() {
               <Tabs
                 defaultValue="all"
                 className="w-full"
-                onValueChange={setActiveTab}
+                onValueChange={handleActiveTab}
               >
                 <TabsList className="mb-4">
                   <TabsTrigger value="all">All Transactions</TabsTrigger>
@@ -246,39 +291,68 @@ export default function CashBalancePage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredTransactions.map((transaction) => (
-                        <TableRow key={transaction.id}>
-                          <TableCell>{transaction.date}</TableCell>
+                      {paginatedData.map(tx => (
+                        <TableRow key={tx.id}>
+                          <TableCell>
+                            {format(new Date(tx.date), "yyyy-MM-dd")}
+                          </TableCell>
                           <TableCell>
                             <span
-                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${transaction.type === "income" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
+                              className={[
+                                "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
+                                tx.type === "income"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100   text-red-800",
+                              ].join(" ")}
                             >
-                              {transaction.type === "income"
-                                ? "Income"
-                                : "Expense"}
+                              {tx.type === "income" ? "Income" : "Expense"}
                             </span>
                           </TableCell>
-                          <TableCell>{transaction.category}</TableCell>
-                          <TableCell>{transaction.description}</TableCell>
+                          <TableCell>{tx.category}</TableCell>
+                          <TableCell>{tx.description}</TableCell>
                           <TableCell className="text-right">
-                            <span
-                              className={
-                                transaction.type === "income"
-                                  ? "text-green-600"
-                                  : "text-red-600"
-                              }
-                            >
-                              {formatCurrency(transaction.amount)}
+                            <span className={tx.type === "income" ? "text-green-600" : "text-red-600"}>
+                              {formatCurrency(tx.amount)}
                             </span>
                           </TableCell>
                         </TableRow>
                       ))}
+                      {paginatedData.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                            No data found
+                          </TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
                 </TabsContent>
               </Tabs>
             </CardContent>
           </Card>
+          <div className="flex justify-between mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === 1}
+              onClick={() => setPage((prev) => prev - 1)}
+            >
+              Previous
+            </Button>
+
+            <span className="text-sm text-muted-foreground">
+              Page {page} of {totalPages || 1}
+            </span>
+
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= Math.ceil(filteredTransactions.length / 10)}
+              onClick={() => setPage((prev) => prev + 1)}
+            >
+              Next
+            </Button>
+          </div>
         </main>
       </div>
 
