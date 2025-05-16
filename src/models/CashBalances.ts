@@ -20,9 +20,23 @@ export interface expense {
 }
 
 export interface expenseItem {
-    id: number
+    id?: number
     date: string
-    type: string
+    type?: string
+    category: string
+    descriptions: string
+    amount: number
+}
+
+export interface income {
+    total: number
+    data: incomeItem[]
+}
+
+export interface incomeItem {
+    id?: number
+    date: string
+    type?: string
     category: string
     descriptions: string
     amount: number

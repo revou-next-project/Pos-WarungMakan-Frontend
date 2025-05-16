@@ -41,15 +41,14 @@ import { ArrowLeft, ArrowDownUp, Plus, Wallet } from "lucide-react";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 
 import { cashBalanceAPI } from "@/lib/api";
-import { CashBalance, expense } from "@/models/CashBalances";
-import { format } from "date-fns";
-import { formatDate } from "@/lib/utils";
-
+import { CashBalance, expense, income } from "@/models/CashBalances";
+import { format, setHours, setMinutes, setSeconds } from "date-fns";
+import { getCurrentMonthRange, getCurrentMonthDateLimits } from "@/lib/utils";
 // Re-use the same item shape
 type Transaction = {
-  id: number
+  id?: number
   date: string
-  type: "income" | "expense"
+  type?: "income" | "expense"
   category: string
   descriptions: string
   amount: number
@@ -59,22 +58,29 @@ type TabValue = "all" | "income" | "expense";
 
 
 export default function CashBalancePage() {
-  const router = useRouter();
-  // const [transactions, setTransactions] = useState(mockTransactions);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabValue>("all");
+
+  // const dateString = format(new Date(), "yyyy-MM-dd'T'HH:mm:ss");
   const [currentTransaction, setCurrentTransaction] = useState({
-    id: 0,
-    date: new Date().toISOString().split("T")[0],
-    type: "income",
+    date: "",
+    type: "",
     category: "",
     description: "",
     amount: 0,
   });
+
   const [cashBalances, setCashBalances] = useState<CashBalance>({ total: 0, data: [] });
   const [expenses, setExpenses] = useState<expense>({ total: 0, data: [] });
+  const [incomes, setIncomes] = useState<income>({ total: 0, data: [] });
   const [page, setPage] = useState(1);
+
+  const {current_month_start_date, current_month_end_date} = getCurrentMonthRange();
+  const {min_date, max_date} = getCurrentMonthDateLimits();
+
+  const formatted_start_date = format(current_month_start_date, "PPP");
+  const formatted_end_date = format(current_month_end_date, "PPP");
 
 
   // In a real implementation, this would fetch from the API
@@ -84,31 +90,36 @@ export default function CashBalancePage() {
     async function fetchAll() {
       try {
           // Fire both requests in parallel
-          const [ incRes, expRes ] = await Promise.all([
+          const [ saleRes, expRes, incRes ] = await Promise.all([
             cashBalanceAPI.getAll({
-              start_date: "2025-05-01T00:00:00",
-              end_date:   "2025-06-01T00:00:00",
+              start_date: current_month_start_date,
+              end_date:   current_month_end_date,
               transaction_type: "sale",
             }),
             cashBalanceAPI.getAllExpenses({
-              start_date: "2025-05-01T00:00:00",
-              end_date:   "2025-06-01T00:00:00",
+              start_date: current_month_start_date,
+              end_date:   current_month_end_date,
             }),
+            cashBalanceAPI.getAllIncomes({
+              start_date: current_month_start_date,
+              end_date:   current_month_end_date,
+            })
           ])
 
-          setCashBalances(incRes)
+          setIncomes(incRes)
+          setCashBalances(saleRes)
           setExpenses(expRes)
 
           // Merge _after_ both complete
           const merged: Transaction[] = [
-          // map incomes
-          ...incRes.data.map(o => ({
-            id:          o.id,
-            date:        o.created_at ?? o.date,   // prefer created_at but fallback
+          // map sales
+          ...saleRes.data.map(s => ({
+            id:          s.id,
+            date:        s.created_at ?? s.date,   // prefer created_at but fallback
             type:        "income" as const,
-            category:    o.category,
-            descriptions: o.descriptions,
-            amount:      o.amount,
+            category:    s.category,
+            descriptions: s.descriptions,
+            amount:      s.amount,
           })),
           // map expenses
           ...expRes.data.map(e => ({
@@ -118,6 +129,14 @@ export default function CashBalancePage() {
             category:    e.category,
             descriptions: e.descriptions,
             amount:      e.amount,
+          })),
+          ...incRes.data.map(inc => ({
+            id:          inc.id,
+            date:        inc.date,   // prefer created_at but fallback
+            type:        "income" as const,
+            category:    inc.category,
+            descriptions: inc.descriptions,
+            amount:      inc.amount,
           })),
         ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
           
@@ -129,12 +148,16 @@ export default function CashBalancePage() {
       }
     fetchAll()
     
-  }, [page, activeTab]);
+  }, [page, activeTab, isAddDialogOpen]);
   
-  const totalIncome = cashBalances
+  const cashBalacneAmount = cashBalances
   ? cashBalances.data.reduce((sum, cash) => sum + cash.amount, 0)
   : 0;
-  console.log(`total sales: ${totalIncome}`)
+
+  const incomeAmount = incomes
+  ? incomes.data.reduce((sum, inc) => sum + inc.amount, 0)
+  : 0;
+  const totalIncome = cashBalacneAmount + incomeAmount
 
   // handleActiveTab
   const handleActiveTab = useCallback((tab: string) => {
@@ -154,27 +177,73 @@ export default function CashBalancePage() {
   const totalExpenses = expenses
   ? expenses.data.reduce((sum, expense) => sum + expense.amount, 0)
   : 0;
-  console.log(`total expense: ${totalExpenses}`)
 
   const balance = totalIncome - totalExpenses;
 
   const handleAddTransaction = () => {
-    // In a real implementation, this would call the API
-    const newTransaction = {
-      ...currentTransaction,
-      id: transactions.length + 1,
-    };
-    setTransactions([...transactions, newTransaction]);
+    
+    switch (currentTransaction.type) {
+      case "income":
+        try {
+          cashBalanceAPI.createIncome({
+            date: currentTransaction.date,
+            category: currentTransaction.category,
+            descriptions: currentTransaction.description,
+            amount: currentTransaction.amount,
+          });
+        } catch (err: any) {
+          console.error(err)
+        } finally {
+          setCurrentTransaction({
+            date: "",
+            type: "",
+            category: "",
+            description: "",
+            amount: 0,
+          })
+          setIsAddDialogOpen(false);
+        }
+        break;
+      case "expense":
+        try {
+          cashBalanceAPI.createExpense({
+            date: currentTransaction.date,
+            category: currentTransaction.category,
+            descriptions: currentTransaction.description,
+            amount: currentTransaction.amount,
+          });
+        } catch (err: any) {
+          console.error(err)
+        } finally {
+          setCurrentTransaction({
+            date: "",
+            type: "",
+            category: "",
+            description: "",
+            amount: 0,
+          })
+          setIsAddDialogOpen(false);
+        }
+        break;
+      default:
+        alert("Invalid transaction type");
+    }
+
+    console.log("New transaction:", currentTransaction);
+    console.log("date", currentTransaction.date)
+    // setIsAddDialogOpen(false);
+  };
+
+  const handleCancleNewTransaction = () => {
     setCurrentTransaction({
-      id: 0,
-      date: new Date().toISOString().split("T")[0],
-      type: "income",
+      date: "",
+      type: "",
       category: "",
       description: "",
       amount: 0,
     });
     setIsAddDialogOpen(false);
-  };
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -186,20 +255,23 @@ export default function CashBalancePage() {
 
   // Categories based on transaction type
   const getCategories = (type: string) => {
-    if (type === "income") {
-      return ["Sales", "Investment", "Other Income"];
-    } else {
-      return [
-        "Ingredients",
-        "Utilities",
-        "Rent",
-        "Salary",
-        "Equipment",
-        "Marketing",
-        "Other",
-      ];
-    }
-  };
+  if (type === "income") {
+    return [
+      { label: "Investment", value: "investment" },
+      { label: "Other Income", value: "other_income" },
+    ];
+  } else {
+    return [
+      { label: "Ingredient", value: "ingredient" },
+      { label: "Utilitie", value: "utilitie" },
+      { label: "Rent", value: "rent" },
+      { label: "Salary", value: "salary" },
+      { label: "Equipment", value: "equipment" },
+      { label: "Marketing", value: "marketing" },
+      { label: "Other", value: "other" },
+    ];
+  }
+};
 
   return (
     <div className="flex h-screen bg-background">
@@ -262,7 +334,7 @@ export default function CashBalancePage() {
           {/* Transactions Table */}
           <Card>
             <CardHeader>
-              <CardTitle>Transaction History</CardTitle>
+              <CardTitle>Transaction History for {formatted_start_date} - {formatted_end_date}</CardTitle>
               <CardDescription>
                 View all cash transactions for your business.
               </CardDescription>
@@ -292,7 +364,7 @@ export default function CashBalancePage() {
                     </TableHeader>
                     <TableBody>
                       {paginatedData.map(tx => (
-                        <TableRow key={tx.id}>
+                        <TableRow key={`${tx.type}-${tx.date}-${tx.amount}-${tx.id}`}>
                           <TableCell>
                             {format(new Date(tx.date), "yyyy-MM-dd")}
                           </TableCell>
@@ -374,13 +446,31 @@ export default function CashBalancePage() {
                 id="date"
                 type="date"
                 className="col-span-3"
-                value={currentTransaction.date}
-                onChange={(e) =>
-                  setCurrentTransaction({
-                    ...currentTransaction,
-                    date: e.target.value,
-                  })
-                }
+                value={currentTransaction.date ? currentTransaction.date.split("T")[0] : ""}
+                min={min_date}
+                max={max_date}
+                onChange={e => {
+                    const val = e.target.value;
+                    if (val) {
+                      let dateObj = new Date(val);
+                      const now = new Date();
+                      dateObj = setHours(dateObj, now.getHours());
+                      dateObj = setMinutes(dateObj, now.getMinutes());
+                      dateObj = setSeconds(dateObj, now.getSeconds());
+
+                      // Format as ISO datetime string with dynamic time
+                      const formattedDate = format(dateObj, "yyyy-MM-dd'T'HH:mm:ss");
+                      setCurrentTransaction({
+                        ...currentTransaction,
+                        date: formattedDate,
+                      });
+                    } else {
+                      setCurrentTransaction({
+                        ...currentTransaction,
+                        date: "",
+                      });
+                    }
+                  }}
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
@@ -423,9 +513,9 @@ export default function CashBalancePage() {
                   <SelectValue placeholder="Select category" />
                 </SelectTrigger>
                 <SelectContent>
-                  {getCategories(currentTransaction.type).map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
+                  {getCategories(currentTransaction.type).map(({label, value}) => (
+                    <SelectItem key={label} value={value}>
+                      {label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -454,19 +544,22 @@ export default function CashBalancePage() {
               <Input
                 id="amount"
                 type="number"
+                min={0}                      // disallow negative input from UI
                 className="col-span-3"
                 value={currentTransaction.amount}
-                onChange={(e) =>
+                onChange={(e) => {
+                  let val = parseInt(e.target.value, 10);
+                  if (isNaN(val) || val < 0) val = 0;   // prevent negatives & NaN
                   setCurrentTransaction({
                     ...currentTransaction,
-                    amount: parseInt(e.target.value, 10) || 0,
-                  })
-                }
+                    amount: val,
+                  });
+                }}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+            <Button variant="outline" onClick={() => handleCancleNewTransaction()}>
               Cancel
             </Button>
             <Button onClick={handleAddTransaction}>Save</Button>
