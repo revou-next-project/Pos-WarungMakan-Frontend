@@ -4,8 +4,6 @@ import { useRouter } from "next/navigation";
 import {
   BarChart3,
   ChefHat,
-  ClipboardList,
-  FileText,
   LogOut,
   Package,
   Settings,

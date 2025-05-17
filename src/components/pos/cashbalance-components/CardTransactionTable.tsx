@@ -19,9 +19,7 @@ import {
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { Button } from "@/components/ui/button";
-
-import { format, setHours, setMinutes, setSeconds } from "date-fns";
+import { format } from "date-fns";
 
 type CardTransactionTableProps = {
 

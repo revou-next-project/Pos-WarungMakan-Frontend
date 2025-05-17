@@ -1,47 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, ArrowDownUp, Plus, Wallet } from "lucide-react";
+import { Plus } from "lucide-react";
 import AdminSidebar from "@/components/layout/AdminSidebar";
 
 import { cashBalanceAPI } from "@/lib/api";
 import { CashBalance, expense, income } from "@/models/CashBalances";
-import { format, setHours, setMinutes, setSeconds } from "date-fns";
+import { format } from "date-fns";
 import { getCurrentMonthRange, getCurrentMonthDateLimits } from "@/lib/utils";
 // Re-use the same item shape
 type Transaction = {
