@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -55,6 +54,10 @@ type Transaction = {
 }
 
 type TabValue = "all" | "income" | "expense";
+
+import CardSummary from "@/components/pos/cashbalance-components/CardSummary";
+import CardTransactionTable from "@/components/pos/cashbalance-components/CardTransactionTable";
+import AddTransactionDialog from "@/components/pos/cashbalance-components/AddTransactionDialog";
 
 
 export default function CashBalancePage() {
@@ -148,7 +151,7 @@ export default function CashBalancePage() {
       }
     fetchAll()
     
-  }, [page, activeTab, isAddDialogOpen]);
+  }, [activeTab, isAddDialogOpen]);
   
   const cashBalacneAmount = cashBalances
   ? cashBalances.data.reduce((sum, cash) => sum + cash.amount, 0)
@@ -294,114 +297,17 @@ export default function CashBalancePage() {
         <main className="flex-1 overflow-auto p-6">
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Current Balance</CardTitle>
-                <CardDescription>Total available cash</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(balance)}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Total Income</CardTitle>
-                <CardDescription>All time income</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(totalIncome)}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg">Total Expenses</CardTitle>
-                <CardDescription>All time expenses</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">
-                  {formatCurrency(totalExpenses)}
-                </div>
-              </CardContent>
-            </Card>
+            <CardSummary balance={balance} totalExpenses={totalExpenses} totalIncome={totalIncome} />
           </div>
 
           {/* Transactions Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Transaction History for {formatted_start_date} - {formatted_end_date}</CardTitle>
-              <CardDescription>
-                View all cash transactions for your business.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Tabs
-                defaultValue="all"
-                className="w-full"
-                onValueChange={handleActiveTab}
-              >
-                <TabsList className="mb-4">
-                  <TabsTrigger value="all">All Transactions</TabsTrigger>
-                  <TabsTrigger value="income">Income</TabsTrigger>
-                  <TabsTrigger value="expense">Expenses</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value={activeTab} className="mt-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Category</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead className="text-right">Amount</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {paginatedData.map(tx => (
-                        <TableRow key={`${tx.type}-${tx.date}-${tx.amount}-${tx.id}`}>
-                          <TableCell>
-                            {format(new Date(tx.date), "yyyy-MM-dd")}
-                          </TableCell>
-                          <TableCell>
-                            <span
-                              className={[
-                                "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium",
-                                tx.type === "income"
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-red-100   text-red-800",
-                              ].join(" ")}
-                            >
-                              {tx.type === "income" ? "Income" : "Expense"}
-                            </span>
-                          </TableCell>
-                          <TableCell>{tx.category}</TableCell>
-                          <TableCell>{tx.descriptions}</TableCell>
-                          <TableCell className="text-right">
-                            <span className={tx.type === "income" ? "text-green-600" : "text-red-600"}>
-                              {formatCurrency(tx.amount)}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {paginatedData.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                            No data found
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
+          <CardTransactionTable 
+              formatted_start_date={formatted_start_date} 
+              formatted_end_date={formatted_end_date} 
+              paginatedData={paginatedData} 
+              handleActiveTab={handleActiveTab} 
+              activeTab={activeTab}
+            />
           <div className="flex justify-between mt-4">
             <Button
               variant="outline"
@@ -429,143 +335,15 @@ export default function CashBalancePage() {
       </div>
 
       {/* Add Transaction Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Transaction</DialogTitle>
-            <DialogDescription>
-              Enter the details of the new cash transaction.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="date" className="text-right">
-                Date
-              </label>
-              <Input
-                id="date"
-                type="date"
-                className="col-span-3"
-                value={currentTransaction.date ? currentTransaction.date.split("T")[0] : ""}
-                min={min_date}
-                max={max_date}
-                onChange={e => {
-                    const val = e.target.value;
-                    if (val) {
-                      let dateObj = new Date(val);
-                      const now = new Date();
-                      dateObj = setHours(dateObj, now.getHours());
-                      dateObj = setMinutes(dateObj, now.getMinutes());
-                      dateObj = setSeconds(dateObj, now.getSeconds());
-
-                      // Format as ISO datetime string with dynamic time
-                      const formattedDate = format(dateObj, "yyyy-MM-dd'T'HH:mm:ss");
-                      setCurrentTransaction({
-                        ...currentTransaction,
-                        date: formattedDate,
-                      });
-                    } else {
-                      setCurrentTransaction({
-                        ...currentTransaction,
-                        date: "",
-                      });
-                    }
-                  }}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="type" className="text-right">
-                Type
-              </label>
-              <Select
-                value={currentTransaction.type}
-                onValueChange={(value) =>
-                  setCurrentTransaction({
-                    ...currentTransaction,
-                    type: value,
-                    category: "", // Reset category when type changes
-                  })
-                }
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="income">Income</SelectItem>
-                  <SelectItem value="expense">Expense</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="category" className="text-right">
-                Category
-              </label>
-              <Select
-                value={currentTransaction.category}
-                onValueChange={(value) =>
-                  setCurrentTransaction({
-                    ...currentTransaction,
-                    category: value,
-                  })
-                }
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Select category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getCategories(currentTransaction.type).map(({label, value}) => (
-                    <SelectItem key={label} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="description" className="text-right">
-                Description
-              </label>
-              <Input
-                id="description"
-                className="col-span-3"
-                value={currentTransaction.description}
-                onChange={(e) =>
-                  setCurrentTransaction({
-                    ...currentTransaction,
-                    description: e.target.value,
-                  })
-                }
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <label htmlFor="amount" className="text-right">
-                Amount
-              </label>
-              <Input
-                id="amount"
-                type="number"
-                min={0}                      // disallow negative input from UI
-                className="col-span-3"
-                value={currentTransaction.amount}
-                onChange={(e) => {
-                  let val = parseInt(e.target.value, 10);
-                  if (isNaN(val) || val < 0) val = 0;   // prevent negatives & NaN
-                  setCurrentTransaction({
-                    ...currentTransaction,
-                    amount: val,
-                  });
-                }}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => handleCancleNewTransaction()}>
-              Cancel
-            </Button>
-            <Button onClick={handleAddTransaction}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AddTransactionDialog 
+        isAddDialogOpen={isAddDialogOpen} 
+        setIsAddDialogOpen={setIsAddDialogOpen} 
+        currentTransaction={currentTransaction} 
+        setCurrentTransaction={setCurrentTransaction} 
+        handleAddTransaction={handleAddTransaction} 
+        handleCancleNewTransaction={handleCancleNewTransaction}
+      />
+      
     </div>
   );
 }
