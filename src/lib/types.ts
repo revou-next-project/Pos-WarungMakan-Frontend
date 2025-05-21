@@ -49,3 +49,18 @@ export interface HeldOrder {
 
 export type CustomerType = "pilih" | "dine-in" | "grab" | "gojek" | "shopee";
 export type DiscountType = "percentage" | "nominal";
+
+export interface PeakHour {
+  hour: number;
+  order_count: number;
+}
+
+export interface BusiestDay {
+  day: string;
+  order_count: number;
+}
+
+export interface TimeBasedReport {
+  peak_hours: PeakHour[];
+  busiest_days: BusiestDay[];
+}
