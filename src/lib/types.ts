@@ -64,3 +64,8 @@ export interface TimeBasedReport {
   peak_hours: PeakHour[];
   busiest_days: BusiestDay[];
 }
+
+export interface TimeBasedAnalysisProps {
+  startDate: Date;
+  endDate: Date;
+}

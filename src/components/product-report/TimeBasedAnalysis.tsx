@@ -2,35 +2,36 @@
 
 import React, { useEffect, useState } from "react";
 import { fetchTimeBasedReport } from "@/lib/api";
-import { PeakHour, BusiestDay } from "@/lib/types";
+import { PeakHour, BusiestDay, TimeBasedReport, TimeBasedAnalysisProps } from "@/lib/types";
 
-export default function TimeBasedAnalysis() {
+export default function TimeBasedAnalysis({ startDate, endDate }: TimeBasedAnalysisProps) {
   const [peakHours, setPeakHours] = useState<PeakHour[]>([]);
   const [busiestDays, setBusiestDays] = useState<BusiestDay[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const today = new Date();
-    const endDate = today.toISOString().split("T")[0];
+    if (!startDate || !endDate) return;
 
-    const oneMonthAgo = new Date();
-    oneMonthAgo.setMonth(today.getMonth() - 1);
-    const startDate = oneMonthAgo.toISOString().split("T")[0];
+    const startStr = startDate.toISOString().split("T")[0];
+    const endStr = endDate.toISOString().split("T")[0];
 
     const getData = async () => {
+      setLoading(true);
       try {
-        const data = await fetchTimeBasedReport(startDate, endDate);
+        const data: TimeBasedReport = await fetchTimeBasedReport(startStr, endStr);
         setPeakHours(data.peak_hours || []);
         setBusiestDays(data.busiest_days || []);
       } catch (error) {
         console.error(error);
+        setPeakHours([]);
+        setBusiestDays([]);
       } finally {
         setLoading(false);
       }
     };
 
     getData();
-  }, []);
+  }, [startDate, endDate]);
 
   return (
     <div className="space-y-6">
