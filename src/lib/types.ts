@@ -20,6 +20,7 @@ export interface OrderItem {
   subtotal: number;
   note: string;
   product: Product;
+  
 }
 
 export interface OrderDetail extends Omit<Order, 'timestamp'> {
@@ -34,6 +35,7 @@ export interface Product {
   unit: string;
   isPackage: boolean;
   image?: string;
+  discount?: number;
 }
 
 export interface HeldOrder {
